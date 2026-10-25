@@ -26,28 +26,54 @@ const WINDOW_MS = 15 * 60 * 1000;
 const MAX_ATTEMPTS = 5;
 const attempts = new Map<string, AttemptBucket>();
 
+// Demo fallbacks keep Vercel preview/production deployments usable without
+// environment variables. Configure the AUTH_* variables to override them.
+const FALLBACK_CLIENT: Account = {
+  email: "client@nara.agency",
+  password: "5B-Ot4piEbtqHRS-GNHD",
+  name: "Jordan Lee",
+  role: "client",
+};
+
+const FALLBACK_ADMIN: Account = {
+  email: "admin@nara.agency",
+  password: "Q0s5weNGh75Qv6G7GV9B",
+  name: "Maya Chen",
+  role: "admin",
+};
+
+function resolveAccount(
+  fallback: Account,
+  email: string | undefined,
+  password: string | undefined,
+  name: string | undefined,
+): Account {
+  const configuredEmail = email?.trim();
+  if (!configuredEmail || !password) return fallback;
+
+  return {
+    email: configuredEmail,
+    password,
+    name: name?.trim() || fallback.name,
+    role: fallback.role,
+  };
+}
+
 function getAccounts(): Account[] {
-  const accounts: Account[] = [];
-
-  if (process.env.AUTH_CLIENT_EMAIL && process.env.AUTH_CLIENT_PASSWORD) {
-    accounts.push({
-      email: process.env.AUTH_CLIENT_EMAIL,
-      password: process.env.AUTH_CLIENT_PASSWORD,
-      name: process.env.AUTH_CLIENT_NAME || "NARA Client",
-      role: "client",
-    });
-  }
-
-  if (process.env.AUTH_ADMIN_EMAIL && process.env.AUTH_ADMIN_PASSWORD) {
-    accounts.push({
-      email: process.env.AUTH_ADMIN_EMAIL,
-      password: process.env.AUTH_ADMIN_PASSWORD,
-      name: process.env.AUTH_ADMIN_NAME || "NARA Admin",
-      role: "admin",
-    });
-  }
-
-  return accounts;
+  return [
+    resolveAccount(
+      FALLBACK_CLIENT,
+      process.env.AUTH_CLIENT_EMAIL,
+      process.env.AUTH_CLIENT_PASSWORD,
+      process.env.AUTH_CLIENT_NAME,
+    ),
+    resolveAccount(
+      FALLBACK_ADMIN,
+      process.env.AUTH_ADMIN_EMAIL,
+      process.env.AUTH_ADMIN_PASSWORD,
+      process.env.AUTH_ADMIN_NAME,
+    ),
+  ];
 }
 
 function safeEqual(left: string, right: string): boolean {
@@ -141,10 +167,6 @@ export async function POST(request: NextRequest) {
   }
 
   const accounts = getAccounts();
-  if (accounts.length === 0) {
-    console.error("No dashboard accounts are configured. Set AUTH_CLIENT_* and AUTH_ADMIN_* env variables.");
-    return noStore(NextResponse.json({ error: "server" }, { status: 503 }));
-  }
 
   let authenticated: Account | null = null;
   for (const account of accounts) {
@@ -176,7 +198,7 @@ export async function POST(request: NextRequest) {
     });
     return noStore(response);
   } catch {
-    console.error("Session creation failed. Verify AUTH_SECRET is configured.");
+    console.error("Session creation failed.");
     return noStore(NextResponse.json({ error: "server" }, { status: 500 }));
   }
 }

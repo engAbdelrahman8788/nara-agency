@@ -81,7 +81,7 @@ This app supports one client role and one agency / owner role, each tied to its 
 
 - **Signed sessions.** After a successful sign-in, `/api/auth/login` issues an HMAC-SHA256 session in the `nara_session` cookie. The cookie is `HttpOnly`, `SameSite=Lax`, scoped to `/`, `Secure` on HTTPS, and expires after 8 hours.
 - **Server-side authorization.** `middleware.ts` protects `/dashboard` and its subpaths. The dashboard page verifies the signed cookie again on the server and passes only the trusted role to the workspace shell. Invalid or expired sessions are sent to `/login`.
-- **Fixed roles.** Client and agency accounts are configured separately through environment variables. The role is embedded in the signed session, so a client cannot request the agency workspace by changing a URL.
+- **Fixed roles.** Client and agency accounts are configured separately through environment variables. If those variables are absent, the app falls back to built-in demo accounts (`client@nara.agency` and `admin@nara.agency`) so preview deployments remain usable. The role is embedded in the signed session, so a client cannot request the agency workspace by changing a URL. Configure both `AUTH_CLIENT_*` and `AUTH_ADMIN_*` to replace the demo accounts.
 - **Login protection.** Failed attempts are limited to 5 per IP address in a rolling 15-minute window. Authentication responses are generic and do not reveal which credential was wrong. Login requests reject cross-origin submissions.
 - **No indexing.** `/dashboard`, `/login`, and `/api/` are disallowed in `robots.txt`; auth and dashboard routes also send `noindex` headers or metadata. Security headers are configured in `next.config.mjs`.
 - **Prototype data.** Dashboard content is realistic in-memory mock data. Authentication gates the UI, not a persistent database. Reloading the dashboard restores the seeded dataset, and account changes live only in the current browser session.
@@ -200,7 +200,7 @@ The portraits in `public/testimonials/` are representative stock photographs sou
 
 ## Deployment
 
-Deploy to Vercel, Netlify, or any platform supporting Next.js 14. Set all variables from `.env.example` in the hosting provider's environment settings, including a unique production `AUTH_SECRET` and strong passwords. If you host under a different domain, update `metadataBase` in `app/layout.tsx`, the base URL in `app/sitemap.ts` / `app/robots.ts`, and the canonical site URL where applicable.
+Deploy to Vercel, Netlify, or any platform supporting Next.js 14. The demo fallbacks work without environment variables, so a preview deployment can be tested immediately. For a public production deployment, set all variables from `.env.example` in the hosting provider's environment settings, including a unique production `AUTH_SECRET` and strong passwords, to replace the built-in demo accounts and signing secret. If you host under a different domain, update `metadataBase` in `app/layout.tsx`, the base URL in `app/sitemap.ts` / `app/robots.ts`, and the canonical site URL where applicable.
 
 For horizontally scaled deployments, move login rate limiting to a shared store so attempts are counted consistently across instances.
 
