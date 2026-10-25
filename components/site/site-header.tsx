@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, LockKeyhole, Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { buttonStyles } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -113,15 +113,6 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2.5 lg:flex">
           <LanguageSwitcher />
-          <div className="hidden xl:block">
-            <Link
-              href="/dashboard?role=client"
-              className={buttonStyles({ variant: "ghost", size: "sm", className: "text-white/70 hover:text-white" })}
-            >
-              <LockKeyhole className="h-3.5 w-3.5" />
-              {t.nav.clientPortal}
-            </Link>
-          </div>
           <Link href={resolveHref("#contact")} className={buttonStyles({ size: "md", className: "px-4" })}>
             {t.nav.bookCall}
             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover/button:-translate-y-0.5 group-hover/button:translate-x-0.5 rtl:group-hover/button:-translate-x-0.5" />
@@ -130,14 +121,6 @@ export function SiteHeader() {
 
         <div className="flex items-center gap-2 lg:hidden">
           <LanguageSwitcher />
-          <div className="hidden sm:block">
-            <Link
-              href="/dashboard?role=client"
-              className={buttonStyles({ variant: "secondary", size: "sm", className: "h-9 px-3 text-[0.75rem]" })}
-            >
-              {t.nav.clientPortal}
-            </Link>
-          </div>
           <button
             type="button"
             onClick={() => setMobileOpen((value) => !value)}
@@ -180,14 +163,6 @@ export function SiteHeader() {
               >
                 {t.nav.bookCall}
                 <ArrowUpRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/dashboard?role=client"
-                onClick={() => setMobileOpen(false)}
-                className={buttonStyles({ variant: "secondary", size: "lg", className: "w-full" })}
-              >
-                <LockKeyhole className="h-4 w-4" />
-                {t.nav.clientPortal}
               </Link>
             </div>
             <p className="mt-5 text-center text-[0.7rem] uppercase tracking-[0.2em] text-white/42">

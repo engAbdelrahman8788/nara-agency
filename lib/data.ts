@@ -51,6 +51,7 @@ export type Testimonial = {
   company: string;
   initials: string;
   accent: string;
+  image?: string;
   metric?: { value: string; label: string };
 };
 
@@ -210,7 +211,7 @@ export const caseStudies: CaseStudy[] = [
       "Within seven months, AUREL increased monthly revenue 312% while cutting blended CAC by 37% — unlocking the confidence to launch two new categories.",
     quote:
       "NARA didn't act like an agency. They moved like part of our leadership team and built a growth engine we now own.",
-    author: "Jordan Lee, Head of Growth at AUREL",
+    author: "Noura Al-Harbi, Head of Growth at AUREL",
     visual: "beauty",
   },
   {
@@ -246,7 +247,7 @@ export const caseStudies: CaseStudy[] = [
       "Northwind grew qualified pipeline 241% and doubled enterprise deal velocity while lowering cost per SQL by 28%.",
     quote:
       "The first agency that understood our buyer. Our sales team now asks what marketing can build next.",
-    author: "Priya Raman, VP Marketing at Northwind",
+    author: "Faisal Al-Otaibi, VP Marketing at Northwind",
     visual: "saas",
   },
   {
@@ -282,7 +283,7 @@ export const caseStudies: CaseStudy[] = [
       "Solace reached its most profitable quarter ever, adding $2.4M in incremental revenue and lifting subscription take-rate to 46%.",
     quote:
       "They found the angles we were too close to see. Our creative library finally reflects the depth of our brand.",
-    author: "Maya Chen, Founder at Solace",
+    author: "Mariam Al-Qasimi, Founder at Solace",
     visual: "wellness",
   },
   {
@@ -318,7 +319,7 @@ export const caseStudies: CaseStudy[] = [
       "Halden nearly tripled annual revenue and expanded distribution, without sacrificing its premium positioning or margin.",
     quote:
       "NARA gave us the confidence to grow without cheapening what makes Halden special.",
-    author: "Theo Bennett, Co-founder at Halden",
+    author: "Yousef Al-Shamsi, Co-founder at Halden",
     visual: "home",
   },
   {
@@ -354,7 +355,7 @@ export const caseStudies: CaseStudy[] = [
       "The collection sold through 98% of inventory in 19 days, with new-customer acquisition up 83% across three launch markets.",
     quote:
       "It felt less like an ad campaign and more like a moment. The team understood our world.",
-    author: "Camille Duval, Brand Director at ÉLAN",
+    author: "Dania Ben Youssef, Brand Director at ÉLAN",
     visual: "fashion",
   },
   {
@@ -390,7 +391,7 @@ export const caseStudies: CaseStudy[] = [
       "Organic sessions grew 364% in eight months and influenced pipeline crossed $1.2M, establishing Kinetiq as a credible category voice.",
     quote:
       "They brought rigor to a brand problem. Every recommendation connected back to pipeline.",
-    author: "Daniel Okafor, CMO at Kinetiq",
+    author: "Karim Mostafa, CMO at Kinetiq",
     visual: "b2b",
   },
 ];
@@ -399,54 +400,60 @@ export const testimonials: Testimonial[] = [
   {
     id: "t1",
     quote:
-      "NARA is the rare partner that can sit in a boardroom and then get their hands dirty in the ad account. They've become the growth brain behind our brand.",
-    name: "Maya Chen",
-    role: "Founder & CEO",
-    company: "SOLACE",
-    initials: "MC",
+      "In one quarter they rebuilt our acquisition model. The reporting is now clear enough that our board reviews it every week — and growth is finally predictable.",
+    name: "Sara Al-Otaibi",
+    role: "Growth Director · Fintech",
+    company: "NUWA · SAUDI ARABIA",
+    initials: "SA",
     accent: "from-[#5B8CFF] to-[#0030B4]",
-    metric: { value: "8.1x", label: "ROAS" },
+    image: "/testimonials/sara-al-otaibi.jpg",
+    metric: { value: "4.4x", label: "ROAS" },
   },
   {
     id: "t2",
     quote:
-      "We've worked with three agencies in four years. NARA is the first team that made us feel like their only client. The clarity alone is worth it.",
-    name: "Jordan Lee",
-    role: "Head of Growth",
-    company: "AUREL",
-    initials: "JL",
+      "NARA doesn't just hand over recommendations. They get into the account and build a growth system we can rely on. For the first time, the agency feels like part of our team.",
+    name: "Ahmed Al-Mansouri",
+    role: "Founder & CEO · Retail",
+    company: "ORYX · UAE",
+    initials: "AM",
     accent: "from-[#C8A97E] to-[#766045]",
+    image: "/testimonials/ahmed-al-mansouri.jpg",
   },
   {
     id: "t3",
     quote:
-      "They rebuilt our entire acquisition model in a quarter. The reporting is so clear that our CFO now joins the weekly growth call voluntarily.",
-    name: "Priya Raman",
-    role: "VP Marketing",
-    company: "NORTHWIND",
-    initials: "PR",
+      "What sets them apart is honesty with numbers. No inflated promises — just a clear plan, continuous testing, and steady growth we can plan around.",
+    name: "Mohamed Hassan",
+    role: "Co-founder · E-commerce",
+    company: "ASEEL · EGYPT",
+    initials: "MH",
     accent: "from-[#00C2FF] to-[#00516D]",
+    image: "/testimonials/mohamed-hassan.jpg",
+    metric: { value: "3.9x", label: "ROAS" },
   },
   {
     id: "t4",
     quote:
-      "The creative NARA produces doesn't feel like performance marketing. It feels like our brand — just sharper, faster, and built to convert.",
-    name: "Camille Duval",
-    role: "Brand Director",
-    company: "ÉLAN",
-    initials: "CD",
+      "Their creative protects our brand identity while still performing. That's a hard balance, and they get it right.",
+    name: "Laila Ben Salih",
+    role: "Marketing Director · Beauty",
+    company: "RIWAQ · UAE",
+    initials: "LB",
     accent: "from-[#7C5CFF] to-[#3B1D9C]",
-    metric: { value: "31M", label: "impressions" },
+    image: "/testimonials/laila-ben-salih.jpg",
+    metric: { value: "12M", label: "impressions" },
   },
   {
     id: "t5",
     quote:
-      "Every dollar is accounted for, every decision is explained. Working with them removed the guesswork from our growth for the first time.",
-    name: "Theo Bennett",
-    role: "Co-founder",
-    company: "HALDEN",
-    initials: "TB",
+      "Every riyal in the budget is justified and measured. They cut waste and improved ad efficiency without compromising lead quality.",
+    name: "Omar Al-Nuaimi",
+    role: "CMO · Hospitality",
+    company: "LAMSA · SAUDI ARABIA",
+    initials: "OA",
     accent: "from-[#FF7A59] to-[#8D2D18]",
+    image: "/testimonials/omar-al-nuaimi.jpg",
   },
 ];
 

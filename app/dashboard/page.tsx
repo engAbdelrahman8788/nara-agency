@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { DashboardShell } from "@/components/dashboard/dashboard-shell";
-import type { DashboardRole } from "@/components/dashboard/types";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/session";
 
 export const metadata: Metadata = {
   title: "Workspace",
@@ -12,15 +14,18 @@ export const metadata: Metadata = {
   },
 };
 
-export default function DashboardPage({
-  searchParams,
-}: {
-  searchParams?: { role?: string | string[] };
-}) {
-  const requestedRole = Array.isArray(searchParams?.role)
-    ? searchParams?.role[0]
-    : searchParams?.role;
-  const initialRole: DashboardRole = requestedRole === "admin" ? "admin" : "client";
+export const dynamic = "force-dynamic";
 
-  return <DashboardShell initialRole={initialRole} />;
+export default async function DashboardPage() {
+  const token = cookies().get(SESSION_COOKIE)?.value;
+  const session = token ? await verifySessionToken(token) : null;
+
+  if (!session) redirect("/login");
+
+  return (
+    <DashboardShell
+      role={session.role}
+      viewer={{ name: session.name, email: session.email }}
+    />
+  );
 }

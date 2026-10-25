@@ -6,7 +6,7 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard"],
+        disallow: ["/dashboard", "/login", "/api/"],
       },
     ],
     sitemap: "https://nara.agency/sitemap.xml",

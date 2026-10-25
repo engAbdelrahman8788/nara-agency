@@ -70,7 +70,13 @@ export function Testimonials() {
                 )}
                 <div className="flex items-center justify-between border-t border-white/[0.08] pt-5">
                   <div className="flex items-center gap-3">
-                    <Avatar initials={featured.initials} name={featured.name} accent={featured.accent} size="lg" />
+                    <Avatar
+                      initials={featured.initials}
+                      name={featured.name}
+                      imageSrc={featured.image}
+                      accent={featured.accent}
+                      size="lg"
+                    />
                     <div>
                       <p className="text-[0.82rem] font-semibold text-white">{featured.name}</p>
                       <p className="mt-0.5 text-[0.64rem] text-white/48">{featured.role}, {featured.company}</p>
@@ -98,7 +104,13 @@ export function Testimonials() {
                   </blockquote>
                   <div className="relative mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
                     <div className="flex items-center gap-2.5">
-                      <Avatar initials={testimonial.initials} name={testimonial.name} accent={testimonial.accent} size="sm" />
+                      <Avatar
+                        initials={testimonial.initials}
+                        name={testimonial.name}
+                        imageSrc={testimonial.image}
+                        accent={testimonial.accent}
+                        size="sm"
+                      />
                       <div>
                         <p className="text-[0.7rem] font-semibold text-white/82">{testimonial.name}</p>
                         <p className="text-[0.57rem] text-white/48">{testimonial.role}</p>

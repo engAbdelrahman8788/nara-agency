@@ -59,8 +59,6 @@ export default function NotFound() {
             <div className="mx-auto mt-12 flex max-w-sm items-center justify-center gap-5 border-t border-white/[0.07] pt-6 text-[0.68rem] text-white/42">
               <Link href="/insights" className="transition hover:text-white">Insights</Link>
               <span className="h-3 w-px bg-white/10" />
-              <Link href="/dashboard?role=client" className="transition hover:text-white">Client portal</Link>
-              <span className="h-3 w-px bg-white/10" />
               <a href="mailto:hello@nara.agency" className="transition hover:text-white">Contact</a>
             </div>
           </div>

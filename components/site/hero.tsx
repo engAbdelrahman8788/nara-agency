@@ -161,7 +161,13 @@ function HeroConsole() {
 
       <div className="absolute -bottom-5 start-0 w-[12.8rem] animate-float-delayed rounded-xl border border-white/[0.1] bg-[#0d111b]/95 p-3.5 shadow-float backdrop-blur-xl sm:-start-8 sm:w-[14rem]">
         <div className="flex items-center gap-2.5">
-          <Avatar initials="JL" size="sm" accent="from-[#C8A97E] to-[#766045]" name="Jordan Lee" />
+          <Avatar
+            initials="SA"
+            size="sm"
+            accent="from-[#5B8CFF] to-[#0030B4]"
+            name="Sara Al-Otaibi"
+            imageSrc="/testimonials/sara-al-otaibi.jpg"
+          />
           <div className="min-w-0 flex-1">
             <p className="truncate text-[0.68rem] font-semibold text-white">{consoleCopy.milestone}</p>
             <p className="mt-0.5 text-[0.56rem] text-white/48">{consoleCopy.milestoneDetail}</p>
@@ -268,15 +274,36 @@ export function Hero() {
                 <div className="flex items-center gap-3">
                   <div className="flex -space-x-2.5 rtl:space-x-reverse">
                     {[
-                      { initials: "MC", accent: "from-[#5B8CFF] to-[#0030B4]", name: "Maya Chen" },
-                      { initials: "JL", accent: "from-[#C8A97E] to-[#766045]", name: "Jordan Lee" },
-                      { initials: "PR", accent: "from-[#00C2FF] to-[#00516D]", name: "Priya Raman" },
-                      { initials: "CD", accent: "from-[#7C5CFF] to-[#3B1D9C]", name: "Camille Duval" },
+                      {
+                        initials: "SA",
+                        accent: "from-[#5B8CFF] to-[#0030B4]",
+                        name: "Sara Al-Otaibi",
+                        imageSrc: "/testimonials/sara-al-otaibi.jpg",
+                      },
+                      {
+                        initials: "AM",
+                        accent: "from-[#C8A97E] to-[#766045]",
+                        name: "Ahmed Al-Mansouri",
+                        imageSrc: "/testimonials/ahmed-al-mansouri.jpg",
+                      },
+                      {
+                        initials: "MH",
+                        accent: "from-[#00C2FF] to-[#00516D]",
+                        name: "Mohamed Hassan",
+                        imageSrc: "/testimonials/mohamed-hassan.jpg",
+                      },
+                      {
+                        initials: "LB",
+                        accent: "from-[#7C5CFF] to-[#3B1D9C]",
+                        name: "Laila Ben Salih",
+                        imageSrc: "/testimonials/laila-ben-salih.jpg",
+                      },
                     ].map((person) => (
                       <Avatar
                         key={person.name}
                         initials={person.initials}
                         name={person.name}
+                        imageSrc={person.imageSrc}
                         accent={person.accent}
                         size="sm"
                         className="avatar-ring"

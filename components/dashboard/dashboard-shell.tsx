@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Bell,
   ChevronDown,
-  ChevronsUpDown,
   Command,
   FileText,
   Gauge,
@@ -68,23 +67,42 @@ const adminNav: NavItem[] = [
 
 const fallbackReportDate = "Oct 23, 2026";
 
+type DashboardViewer = {
+  name: string;
+  email: string;
+};
+
+function getViewerMeta(role: DashboardRole, viewer?: DashboardViewer) {
+  const base = dashboardRoleMeta[role];
+  const name = viewer?.name.trim() || base.name;
+
+  return {
+    ...base,
+    name,
+    initials: getInitials(name) || base.initials,
+    email: viewer?.email ?? "",
+  };
+}
+
 function Sidebar({
   role,
+  viewer,
   activeView,
   onNavigate,
-  onSwitchRole,
+  onSignOut,
   ticketCount,
   onClose,
 }: {
   role: DashboardRole;
+  viewer?: DashboardViewer;
   activeView: string;
   onNavigate: (view: string) => void;
-  onSwitchRole: (role: DashboardRole) => void;
+  onSignOut: () => void;
   ticketCount: number;
   onClose?: () => void;
 }) {
   const nav = role === "client" ? clientNav : adminNav;
-  const meta = dashboardRoleMeta[role];
+  const meta = getViewerMeta(role, viewer);
 
   return (
     <div className="flex h-full flex-col">
@@ -105,12 +123,7 @@ function Sidebar({
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
-        <button
-          type="button"
-          onClick={() => onSwitchRole(role === "client" ? "admin" : "client")}
-          className="group flex w-full items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.022] p-2.5 text-left transition hover:border-white/[0.14] hover:bg-white/[0.035]"
-          title={`Switch to ${role === "client" ? "admin" : "client"} view`}
-        >
+        <div className="flex w-full items-center gap-2.5 rounded-xl border border-white/[0.07] bg-white/[0.022] p-2.5 text-left">
           <span
             className={cn(
               "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-[0.75rem] font-semibold",
@@ -130,8 +143,7 @@ function Sidebar({
               {role === "client" ? "Client workspace" : "Admin workspace"}
             </span>
           </span>
-          <ChevronsUpDown className="h-3 w-3 shrink-0 text-white/48 transition group-hover:text-white/62" />
-        </button>
+        </div>
 
         <div className="mt-6">
           <p className="px-3 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-white/48">Workspace</p>
@@ -191,27 +203,11 @@ function Sidebar({
         <div className="mt-8 rounded-xl border border-white/[0.07] bg-[#0B0E16] p-3">
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-electric-soft/70" />
-            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/48">Experience preview</p>
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white/48">Secure workspace</p>
           </div>
           <p className="mt-1.5 text-[0.7rem] leading-4 text-white/48">
-            Switch between the client and agency view.
+            Access is limited to your assigned role. Sessions expire after 8 hours.
           </p>
-          <div className="mt-2.5 grid grid-cols-2 gap-1 rounded-lg border border-white/[0.06] bg-black/20 p-0.5">
-            {(["client", "admin"] as DashboardRole[]).map((option) => (
-              <button
-                key={option}
-                type="button"
-                onClick={() => onSwitchRole(option)}
-                aria-pressed={role === option}
-                className={cn(
-                  "rounded-md py-1.5 text-[0.7rem] font-semibold capitalize transition-all",
-                  role === option ? "bg-white/[0.09] text-white shadow-sm" : "text-white/48 hover:text-white/62",
-                )}
-              >
-                {option}
-              </button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -222,13 +218,14 @@ function Sidebar({
             <p className="truncate text-[0.75rem] font-semibold text-white/78">{meta.name}</p>
             <p className="mt-0.5 truncate text-[0.65rem] text-white/48">{meta.role} · {meta.company}</p>
           </div>
-          <Link
-            href="/"
-            aria-label="Exit dashboard"
+          <button
+            type="button"
+            onClick={onSignOut}
+            aria-label="Sign out"
             className="flex h-6 w-6 items-center justify-center rounded-md text-white/48 transition hover:bg-white/[0.05] hover:text-white/70"
           >
             <LogOut className="h-3 w-3" />
-          </Link>
+          </button>
         </div>
       </div>
     </div>
@@ -249,14 +246,19 @@ const adminNotifications: Notification[] = [
   { id: "n3", title: "HALDEN health score dropped", description: "The account has moved into the at-risk band.", time: "2d ago", read: true },
 ];
 
-export function DashboardShell({ initialRole = "client" }: { initialRole?: DashboardRole }) {
-  const [role, setRole] = useState<DashboardRole>(initialRole);
-  const [activeView, setActiveView] = useState(initialRole === "admin" ? "command" : "overview");
+export function DashboardShell({
+  role,
+  viewer,
+}: {
+  role: DashboardRole;
+  viewer?: DashboardViewer;
+}) {
+  const [activeView, setActiveView] = useState(role === "admin" ? "command" : "overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>(
-    initialRole === "admin" ? adminNotifications : clientNotifications,
+    role === "admin" ? adminNotifications : clientNotifications,
   );
 
   const [clients, setClients] = useState<Client[]>(initialClients);
@@ -268,7 +270,7 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
 
   const nav = role === "client" ? clientNav : adminNav;
   const activeNav = nav.find((item) => item.id === activeView) ?? nav[0];
-  const meta = dashboardRoleMeta[role];
+  const meta = getViewerMeta(role, viewer);
   const unresolvedTickets = tickets.filter((ticket) => ticket.status !== "Resolved").length;
   const aurelTickets = tickets.filter((ticket) => ticket.client === "AUREL" && ticket.status !== "Resolved").length;
   const unread = notifications.some((notification) => !notification.read);
@@ -294,19 +296,6 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
     return () => document.removeEventListener("keydown", handler);
   }, []);
 
-  const switchRole = useCallback((nextRole: DashboardRole) => {
-    setRole(nextRole);
-    setActiveView(nextRole === "admin" ? "command" : "overview");
-    setNotifications(nextRole === "admin" ? adminNotifications : clientNotifications);
-    setSidebarOpen(false);
-    setProfileOpen(false);
-    setNotificationsOpen(false);
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", `/dashboard?role=${nextRole}`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  }, []);
-
   const navigate = useCallback((view: string) => {
     setActiveView(view);
     setSidebarOpen(false);
@@ -315,16 +304,19 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
     }
   }, []);
 
-  const openClientLibrary = useCallback(() => {
-    setRole("client");
-    setActiveView("reports");
-    setNotifications(clientNotifications);
+  const signOut = useCallback(async () => {
     setSidebarOpen(false);
     setProfileOpen(false);
     setNotificationsOpen(false);
-    if (typeof window !== "undefined") {
-      window.history.replaceState(null, "", "/dashboard?role=client");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+    } finally {
+      window.location.replace("/login");
     }
   }, []);
 
@@ -485,7 +477,6 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
             clients={clients}
             reports={clientReports}
             onUpload={uploadReport}
-            onViewClientLibrary={openClientLibrary}
           />
         );
       case "tickets":
@@ -507,9 +498,10 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
         <aside className="fixed inset-y-0 left-0 z-40 hidden w-[17.5rem] border-r border-white/[0.065] bg-[#080A10] lg:block">
           <Sidebar
             role={role}
+            viewer={viewer}
             activeView={activeView}
             onNavigate={navigate}
-            onSwitchRole={switchRole}
+            onSignOut={signOut}
             ticketCount={role === "client" ? aurelTickets : unresolvedTickets}
           />
         </aside>
@@ -525,9 +517,10 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
             <div className="relative z-10 h-full w-[18.25rem] border-r border-white/[0.08] bg-[#080A10] shadow-2xl animate-fade-in">
               <Sidebar
                 role={role}
+                viewer={viewer}
                 activeView={activeView}
                 onNavigate={navigate}
-                onSwitchRole={switchRole}
+                onSignOut={signOut}
                 ticketCount={role === "client" ? aurelTickets : unresolvedTickets}
                 onClose={() => setSidebarOpen(false)}
               />
@@ -642,32 +635,33 @@ export function DashboardShell({ initialRole = "client" }: { initialRole?: Dashb
                           <Avatar initials={meta.initials} name={meta.name} accent={meta.accent} size="md" />
                           <div>
                             <p className="text-[0.8rem] font-semibold text-white/80">{meta.name}</p>
-                            <p className="mt-0.5 text-[0.65rem] text-white/48">{meta.role} · {meta.company}</p>
+                            <p className="mt-0.5 max-w-[10.5rem] truncate text-[0.65rem] text-white/48">
+                              {meta.email || `${meta.role} · ${meta.company}`}
+                            </p>
                           </div>
                         </div>
                       </div>
                       <div className="p-1.5">
-                        <p className="px-2 py-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-white/48">Switch experience</p>
-                        {(["client", "admin"] as DashboardRole[]).map((option) => (
-                          <button
-                            key={option}
-                            type="button"
-                            onClick={() => switchRole(option)}
-                            className="flex w-full items-center justify-between rounded-md px-2 py-2 text-left transition hover:bg-white/[0.04]"
-                          >
-                            <span className="flex items-center gap-2">
-                              {option === "client" ? <Users className="h-3.5 w-3.5 text-white/48" /> : <ShieldCheck className="h-3.5 w-3.5 text-white/48" />}
-                              <span className="text-[0.75rem] text-white/62 capitalize">{option} workspace</span>
-                            </span>
-                            {role === option && <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />}
-                          </button>
-                        ))}
+                        <p className="px-2 py-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-white/48">Workspace access</p>
+                        <div className="flex items-center gap-2 rounded-md px-2 py-2 text-[0.75rem] text-white/55">
+                          <ShieldCheck className="h-3.5 w-3.5 text-white/48" />
+                          {role === "client" ? "Client access" : "Agency access"}
+                          <span className="ms-auto h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                        </div>
                       </div>
                       <div className="border-t border-white/[0.07] p-1.5">
                         <Link href="/" className="flex items-center gap-2 rounded-md px-2 py-2 text-[0.75rem] text-white/48 transition hover:bg-white/[0.04] hover:text-white/70">
-                          <LogOut className="h-3.5 w-3.5" />
+                          <PanelLeftClose className="h-3.5 w-3.5" />
                           Back to website
                         </Link>
+                        <button
+                          type="button"
+                          onClick={signOut}
+                          className="flex w-full items-center gap-2 rounded-md px-2 py-2 text-left text-[0.75rem] text-white/48 transition hover:bg-white/[0.04] hover:text-white/70"
+                        >
+                          <LogOut className="h-3.5 w-3.5" />
+                          Sign out
+                        </button>
                       </div>
                     </div>
                   </>

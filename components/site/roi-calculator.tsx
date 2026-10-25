@@ -1,10 +1,12 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
   Calculator,
+  ChevronDown,
+  Globe2,
   Sparkles,
   TrendingUp,
   Users,
@@ -13,9 +15,18 @@ import { SectionLabel } from "@/components/ui/section-label";
 import { Reveal } from "@/components/ui/reveal";
 import { buttonStyles } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n/language-provider";
+import {
+  currencies,
+  currencyOrder,
+  detectCurrency,
+  formatCurrency,
+  formatNumber,
+  getReturnMultiplier,
+  roundToStep,
+  storeCurrency,
+  type CurrencyCode,
+} from "@/lib/currency";
 import { cn } from "@/lib/utils";
-
-const ROI_MULTIPLIER = 4.8;
 
 type Projection = {
   estimatedRevenue: number;
@@ -29,43 +40,48 @@ type TouchedFields = {
   itemValue: boolean;
 };
 
-const currency = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  maximumFractionDigits: 0,
-});
-
-const number = new Intl.NumberFormat("en-US", {
-  maximumFractionDigits: 0,
-});
-
 function parsePositiveInput(value: string): number | null {
   if (value.trim() === "") return null;
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function buildProjection(budget: number, itemValue: number): Projection | null {
-  const rawRevenue = budget * ROI_MULTIPLIER;
-  if (!Number.isFinite(rawRevenue)) return null;
+function buildProjection(
+  budget: number,
+  itemValue: number,
+  roiMultiplier: number,
+): Projection | null {
+  const rawRevenue = budget * roiMultiplier;
+  if (!Number.isFinite(rawRevenue) || rawRevenue <= 0) return null;
 
   const estimatedRevenue = Math.round((rawRevenue + Number.EPSILON) * 100) / 100;
 
   return {
     estimatedRevenue,
-    roiMultiplier: ROI_MULTIPLIER,
+    roiMultiplier,
     projectedCustomers: Math.floor(estimatedRevenue / itemValue),
     netReturn: Math.round((estimatedRevenue - budget + Number.EPSILON) * 100) / 100,
   };
 }
 
 export function RoiCalculator() {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const copy = t.roi;
-  const [budget, setBudget] = useState("25000");
-  const [itemValue, setItemValue] = useState("120");
+  const [currencyCode, setCurrencyCode] = useState<CurrencyCode>("USD");
+  const [budget, setBudget] = useState(String(currencies.USD.defaultBudget));
+  const [itemValue, setItemValue] = useState(String(currencies.USD.defaultItemValue));
   const [touched, setTouched] = useState<TouchedFields>({ budget: false, itemValue: false });
   const uid = useId().replace(/:/g, "");
+
+  const config = currencies[currencyCode];
+
+  useEffect(() => {
+    const detected = detectCurrency();
+    const next = currencies[detected];
+    setCurrencyCode(detected);
+    setBudget(String(next.defaultBudget));
+    setItemValue(String(next.defaultItemValue));
+  }, []);
 
   const budgetNumber = parsePositiveInput(budget);
   const itemValueNumber = parsePositiveInput(itemValue);
@@ -81,13 +97,43 @@ export function RoiCalculator() {
       : itemValueNumber === null
         ? copy.itemPositive
         : undefined;
+  const roiMultiplier =
+    budgetNumber !== null ? getReturnMultiplier(budgetNumber, currencyCode) : null;
   const projection =
-    budgetNumber !== null && itemValueNumber !== null
-      ? buildProjection(budgetNumber, itemValueNumber)
+    budgetNumber !== null && itemValueNumber !== null && roiMultiplier !== null
+      ? buildProjection(budgetNumber, itemValueNumber, roiMultiplier)
       : null;
 
   const showBudgetError = touched.budget ? budgetError : undefined;
   const showItemValueError = touched.itemValue ? itemValueError : undefined;
+
+  const handleCurrencyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const nextCode = event.target.value as CurrencyCode;
+    if (nextCode === currencyCode) return;
+
+    const previous = currencies[currencyCode];
+    const next = currencies[nextCode];
+    const isPristine =
+      budget.trim() === String(previous.defaultBudget) &&
+      itemValue.trim() === String(previous.defaultItemValue);
+
+    const nextBudget = isPristine
+      ? next.defaultBudget
+      : budgetNumber !== null
+        ? roundToStep((budgetNumber * next.usdRate) / previous.usdRate, next.budgetStep)
+        : next.defaultBudget;
+    const nextItemValue = isPristine
+      ? next.defaultItemValue
+      : itemValueNumber !== null
+        ? roundToStep((itemValueNumber * next.usdRate) / previous.usdRate, next.itemStep)
+        : next.defaultItemValue;
+
+    setCurrencyCode(nextCode);
+    setBudget(String(nextBudget));
+    setItemValue(String(nextItemValue));
+    setTouched({ budget: false, itemValue: false });
+    storeCurrency(nextCode);
+  };
 
   return (
     <section id="roi" className="relative overflow-hidden py-24 sm:py-32">
@@ -112,7 +158,9 @@ export function RoiCalculator() {
               <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4">
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-300/80" />
-                  <p className="font-display text-[1.6rem] font-medium tracking-[-0.04em] text-white">4.8x</p>
+                  <p className="font-display text-[1.6rem] font-medium tracking-[-0.04em] text-white">
+                    <span dir="ltr">{copy.returnRangeValue}</span>
+                  </p>
                 </div>
                 <p className="mt-1 text-[0.64rem] uppercase tracking-[0.12em] text-white/48">
                   {copy.blendedReturn}
@@ -121,7 +169,9 @@ export function RoiCalculator() {
               <div className="rounded-xl border border-white/[0.08] bg-white/[0.025] p-4">
                 <div className="flex items-center gap-2">
                   <Sparkles className="h-3.5 w-3.5 text-electric-soft/80" />
-                  <p className="font-display text-[1.6rem] font-medium tracking-[-0.04em] text-white">{copy.windowValue}</p>
+                  <p className="font-display text-[1.6rem] font-medium tracking-[-0.04em] text-white">
+                    {copy.windowValue}
+                  </p>
                 </div>
                 <p className="mt-1 text-[0.64rem] uppercase tracking-[0.12em] text-white/48">
                   {copy.projectionWindow}
@@ -165,6 +215,39 @@ export function RoiCalculator() {
                 </span>
               </div>
 
+              <div className="relative flex flex-wrap items-center justify-between gap-2 border-b border-white/[0.07] px-5 py-3 sm:px-6">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Globe2 className="h-3.5 w-3.5 shrink-0 text-electric-soft/70" />
+                  <div>
+                    <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-white/55">
+                      {copy.currencyLabel}
+                    </p>
+                    <p id={`${uid}-currency-note`} className="mt-0.5 text-[0.6rem] text-white/38">
+                      {copy.currencyNote}
+                    </p>
+                  </div>
+                </div>
+                <div className="relative">
+                  <label htmlFor={`${uid}-currency`} className="sr-only">
+                    {copy.currencyLabel}
+                  </label>
+                  <select
+                    id={`${uid}-currency`}
+                    value={currencyCode}
+                    onChange={handleCurrencyChange}
+                    aria-describedby={`${uid}-currency-note`}
+                    className="h-8 cursor-pointer appearance-none rounded-lg border border-white/[0.09] bg-[#070A12] py-0 pe-7 ps-2.5 text-[0.68rem] font-medium text-white/78 outline-none transition focus:border-electric/50 focus:ring-2 focus:ring-electric/15"
+                  >
+                    {currencyOrder.map((code) => (
+                      <option key={code} value={code}>
+                        {copy.currencyOptions[code]}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute end-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-white/38" />
+                </div>
+              </div>
+
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
@@ -182,8 +265,8 @@ export function RoiCalculator() {
                       {copy.budgetLabel}
                     </label>
                     <div className="relative mt-2">
-                      <span className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-[0.82rem] font-medium text-white/38">
-                        $
+                      <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[0.52rem] font-semibold uppercase tracking-[0.08em] text-white/38">
+                        {currencyCode}
                       </span>
                       <input
                         id={`${uid}-budget`}
@@ -197,9 +280,9 @@ export function RoiCalculator() {
                         onBlur={() => setTouched((current) => ({ ...current, budget: true }))}
                         aria-invalid={Boolean(showBudgetError)}
                         aria-describedby={showBudgetError ? `${uid}-budget-error` : undefined}
-                        placeholder={copy.budgetPlaceholder}
+                        placeholder={String(config.defaultBudget)}
                         className={cn(
-                          "h-12 w-full rounded-xl border bg-[#070A12] ps-8 pe-3 text-[0.9rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
+                          "h-12 w-full rounded-xl border bg-[#070A12] ps-12 pe-3 text-[0.9rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
                           showBudgetError ? "border-red-400/40" : "border-white/[0.09]",
                         )}
                       />
@@ -219,8 +302,8 @@ export function RoiCalculator() {
                       {copy.itemValueLabel}
                     </label>
                     <div className="relative mt-2">
-                      <span className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-[0.82rem] font-medium text-white/38">
-                        $
+                      <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[0.52rem] font-semibold uppercase tracking-[0.08em] text-white/38">
+                        {currencyCode}
                       </span>
                       <input
                         id={`${uid}-item-value`}
@@ -234,9 +317,9 @@ export function RoiCalculator() {
                         onBlur={() => setTouched((current) => ({ ...current, itemValue: true }))}
                         aria-invalid={Boolean(showItemValueError)}
                         aria-describedby={showItemValueError ? `${uid}-item-value-error` : undefined}
-                        placeholder={copy.itemValuePlaceholder}
+                        placeholder={String(config.defaultItemValue)}
                         className={cn(
-                          "h-12 w-full rounded-xl border bg-[#070A12] ps-8 pe-3 text-[0.9rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
+                          "h-12 w-full rounded-xl border bg-[#070A12] ps-12 pe-3 text-[0.9rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
                           showItemValueError ? "border-red-400/40" : "border-white/[0.09]",
                         )}
                       />
@@ -276,12 +359,12 @@ export function RoiCalculator() {
 
                     {projection ? (
                       <div
-                        key={`${projection.estimatedRevenue}-${projection.projectedCustomers}-${projection.netReturn}`}
+                        key={`${currencyCode}-${projection.estimatedRevenue}-${projection.projectedCustomers}-${projection.netReturn}`}
                         className="animate-fade-up"
                       >
                         <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                          <p className="font-display text-[2rem] font-medium leading-none tracking-[-0.045em] tabular-nums text-white sm:text-[2.45rem]">
-                            {currency.format(projection.estimatedRevenue)}
+                          <p className="max-w-full break-words font-display text-[2rem] font-medium leading-none tracking-[-0.045em] tabular-nums text-white sm:text-[2.45rem]">
+                            {formatCurrency(projection.estimatedRevenue, currencyCode, language)}
                           </p>
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-2 py-1 text-[0.62rem] font-semibold text-emerald-300">
                             <TrendingUp className="h-3 w-3" />
@@ -295,7 +378,7 @@ export function RoiCalculator() {
                               {copy.netRevenue}
                             </dt>
                             <dd className="mt-1 text-[0.92rem] font-semibold tabular-nums text-white/82">
-                              {currency.format(projection.netReturn)}
+                              {formatCurrency(projection.netReturn, currencyCode, language)}
                             </dd>
                           </div>
                           <div>
@@ -304,7 +387,7 @@ export function RoiCalculator() {
                             </dt>
                             <dd className="mt-1 flex items-center gap-1.5 text-[0.92rem] font-semibold tabular-nums text-white/82">
                               <Users className="h-3 w-3 text-white/38" />
-                              {number.format(projection.projectedCustomers)}
+                              {formatNumber(projection.projectedCustomers, language)}
                             </dd>
                           </div>
                           <div>

@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
-  ArrowUpRight,
   Check,
   ChevronDown,
   CloudUpload,
@@ -33,12 +32,10 @@ export function AdminReports({
   clients,
   reports,
   onUpload,
-  onViewClientLibrary,
 }: {
   clients: Client[];
   reports: ClientReport[];
   onUpload: (input: UploadReportInput) => void;
-  onViewClientLibrary: () => void;
 }) {
   const [client, setClient] = useState(clients[0]?.name ?? "AUREL");
   const [title, setTitle] = useState("");
@@ -130,16 +127,10 @@ export function AdminReports({
         title="Send the signal."
         description="Publish client-ready reporting, roadmaps, and data packs — with delivery tracked end to end."
         actions={
-          <>
-            <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 text-[0.75rem] text-white/48">
-              <FileCheck2 className="h-3.5 w-3.5 text-emerald-300/65" />
-              {monthlyCount} reports published this month
-            </span>
-            <button type="button" onClick={onViewClientLibrary} className={buttonStyles({ variant: "secondary", size: "sm", className: "h-9" })}>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-              View client library
-            </button>
-          </>
+          <span className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/[0.08] bg-white/[0.025] px-3 text-[0.75rem] text-white/48">
+            <FileCheck2 className="h-3.5 w-3.5 text-emerald-300/65" />
+            {monthlyCount} reports published this month
+          </span>
         }
       />
 
@@ -311,7 +302,7 @@ export function AdminReports({
 
         <div className="space-y-3.5 xl:col-span-5">
           <DashboardCard>
-            <SectionHeader title="Recent uploads" description="Across all client accounts" action={<button type="button" onClick={onViewClientLibrary} className="text-[0.7rem] font-medium text-white/48 transition hover:text-white">View all</button>} />
+            <SectionHeader title="Recent uploads" description="Across all client accounts" action={<span className="text-[0.62rem] text-white/38">Latest 4</span>} />
             <div className="mt-4 space-y-2">
               {recent.map((report) => (
                 <div key={report.id} className="flex items-center gap-2.5 rounded-lg border border-white/[0.06] bg-white/[0.016] p-2.5">

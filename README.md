@@ -1,6 +1,6 @@
 # NARA — Growth Studio
 
-A production-ready marketing site and dual-role agency dashboard for **NARA**, a senior-only growth studio. Built with Next.js App Router, Tailwind CSS, Lucide icons, and a bespoke dark visual system — no remote images required.
+A production-ready marketing site and secure, dual-role agency workspace for **NARA**, a senior-only growth studio. Built with Next.js App Router, Tailwind CSS, Lucide icons, and a bespoke dark visual system.
 
 ## Quick start
 
@@ -9,6 +9,7 @@ A production-ready marketing site and dual-role agency dashboard for **NARA**, a
 ```bash
 cd nara
 npm install
+cp .env.example .env.local
 npm run dev
 ```
 
@@ -20,6 +21,28 @@ On Windows PowerShell, use `npm.cmd` if script execution policy blocks `npm.ps1`
 npm.cmd install
 npm.cmd run dev
 ```
+
+### Environment setup
+
+Workspace access and signed sessions require environment variables. Copy `.env.example` to `.env.local` and replace every placeholder.
+
+| Variable | Purpose |
+| --- | --- |
+| `AUTH_SECRET` | HMAC signing secret for session cookies. Minimum 32 characters. |
+| `AUTH_CLIENT_EMAIL` | Client workspace email address. |
+| `AUTH_CLIENT_PASSWORD` | Client workspace password. |
+| `AUTH_CLIENT_NAME` | Display name for the client account. |
+| `AUTH_ADMIN_EMAIL` | Agency / owner workspace email address. |
+| `AUTH_ADMIN_PASSWORD` | Agency / owner workspace password. |
+| `AUTH_ADMIN_NAME` | Display name for the agency account. |
+
+Generate a signing secret with:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+```
+
+`.env.local` is ignored by git. Never commit real credentials. The local working copy includes generated test credentials in `.env.local`; replace them before any shared or production deployment.
 
 ### Production build
 
@@ -42,26 +65,40 @@ npm run build       # optimized production build
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Homepage: hero, metrics ticker, services, method, selected work, testimonials, insights, contact |
+| `/` | Homepage: hero, metrics ticker, services, method, selected work, ROI calculator, testimonials, insights, contact |
 | `/insights` | Editorial index |
 | `/insights/paid-media-playbook` | Long-form article |
 | `/insights/roas` | Long-form article |
 | `/insights/creative-velocity` | Long-form article |
 | `/privacy` | Privacy policy |
 | `/terms` | Terms of service |
-| `/dashboard?role=client` | Client workspace (Jordan Lee / AUREL) |
-| `/dashboard?role=admin` | Agency workspace (Maya Chen / NARA) |
+| `/login` | Private workspace sign-in |
+| `/dashboard` | Session-scoped client or agency workspace; redirects to `/login` when unauthenticated |
 
-Switch roles from any dashboard page using the workspace switcher in the sidebar, or the account menu in the top bar. The URL updates to reflect the active role.
+This app supports one client role and one agency / owner role, each tied to its own account. The dashboard does not accept a role query parameter, does not expose a role switcher, and is not linked from the public header, footer, landing page, or 404 page.
 
-### Demo accounts
+## Authentication and workspace security
 
-The dashboard is a fully interactive, front-end prototype. There is no authentication or backend.
+- **Signed sessions.** After a successful sign-in, `/api/auth/login` issues an HMAC-SHA256 session in the `nara_session` cookie. The cookie is `HttpOnly`, `SameSite=Lax`, scoped to `/`, `Secure` on HTTPS, and expires after 8 hours.
+- **Server-side authorization.** `middleware.ts` protects `/dashboard` and its subpaths. The dashboard page verifies the signed cookie again on the server and passes only the trusted role to the workspace shell. Invalid or expired sessions are sent to `/login`.
+- **Fixed roles.** Client and agency accounts are configured separately through environment variables. The role is embedded in the signed session, so a client cannot request the agency workspace by changing a URL.
+- **Login protection.** Failed attempts are limited to 5 per IP address in a rolling 15-minute window. Authentication responses are generic and do not reveal which credential was wrong. Login requests reject cross-origin submissions.
+- **No indexing.** `/dashboard`, `/login`, and `/api/` are disallowed in `robots.txt`; auth and dashboard routes also send `noindex` headers or metadata. Security headers are configured in `next.config.mjs`.
+- **Prototype data.** Dashboard content is realistic in-memory mock data. Authentication gates the UI, not a persistent database. Reloading the dashboard restores the seeded dataset, and account changes live only in the current browser session.
 
-- **Client:** Jordan Lee, Head of Growth at AUREL
-- **Admin:** Maya Chen, Growth Director at NARA
+The in-memory login rate limiter is per server process. For a multi-instance production deployment, replace it with a shared store such as Redis or a platform rate-limiting service.
 
-All data is realistic mock data. Client additions, report uploads, ticket replies, and status changes live in React state for the current page session. Reloading the page restores the seeded dataset.
+## Currency and ROI model
+
+The public ROI calculator adapts to the visitor's market and keeps projections grounded in normal digital-marketing returns.
+
+- **Supported currencies:** EGP (Egypt), SAR (Saudi Arabia), AED (United Arab Emirates), and USD (fallback).
+- **Detection order:** saved `nara-currency` preference → IANA timezone → browser locale region → USD.
+- **Local benchmarks:** each currency has its own default 90-day media budget and average customer value, rather than using a raw currency conversion of a US default.
+- **Manual selection:** changing the currency stores the preference for future visits. Edited values are converted once using approximate FX rates and rounded to a market-friendly step; pristine values switch to the selected market's local benchmark.
+- **Realistic returns:** the modeled return multiple is constrained to **3.2x–4.8x**. It rises gradually with the USD-equivalent 90-day budget using `3.2 + 1.6 × (1 − e^(−budgetUSD / 60,000))`, rounded to one decimal.
+- **Projection:** revenue = budget × modeled multiple; net return = revenue − budget; projected customers = floor(revenue ÷ customer value).
+- **Formatting:** results use locale-aware formatting and Latin digits in Arabic (`ar-EG-u-nu-latn`). Inputs are validated inline, and positive validation messages are preserved.
 
 ## What's included
 
@@ -71,8 +108,9 @@ All data is realistic mock data. Client additions, report uploads, ticket replie
 - Five interactive service cards with detail modals
 - Methodology timeline with a senior-pod visual
 - Filterable case studies with bespoke CSS/SVG cover art and full-story modals
-- Interactive ROI calculator with instant client-side revenue projections, live updates, and inline field validation
-- Testimonials, editorial insights, and newsletter capture
+- Currency-aware ROI calculator with market detection and realistic 3.2x–4.8x projections
+- Arab client testimonials with representative portraits, bilingual profile context, and natural Arabic review copy
+- Editorial insights and newsletter capture
 - Validated lead form with success state, calendar booking, and WhatsApp links
 - Branded 404 and error boundaries
 - Structured data, Open Graph metadata, `sitemap.xml`, and `robots.txt`
@@ -108,9 +146,11 @@ The palette and typography are defined in `tailwind.config.ts` and `app/globals.
 
 - **Display type:** Space Grotesk Variable
 - **Body type:** Manrope Variable
+- **Arabic type:** Noto Sans Arabic Variable
 - Fonts are bundled locally through `@fontsource-variable`, so there are no external font requests.
 - All opacity modifiers from `0` to `100` are registered in Tailwind for fine-grained glass and border treatments.
 - Motion respects `prefers-reduced-motion`.
+- The dashboard remains English/LTR even when Arabic is selected on the public site.
 
 ## Project structure
 
@@ -118,7 +158,9 @@ The palette and typography are defined in `tailwind.config.ts` and `app/globals.
 app/
   page.tsx                 Homepage assembly
   layout.tsx               Fonts, metadata, skip link
-  dashboard/page.tsx       Role-aware dashboard route
+  login/page.tsx           Public sign-in route
+  dashboard/page.tsx       Authenticated, role-scoped workspace
+  api/auth/                Login and logout route handlers
   insights/                Index and long-form article routes
   privacy/, terms/         Legal pages
   not-found.tsx            404 experience
@@ -126,30 +168,41 @@ app/
   globals.css              Tokens, utilities, animations
   sitemap.ts, robots.ts    SEO routes
 components/
+  auth/                    Bilingual login experience
   brand/                   Logo
   site/                    Marketing sections and article tools
   dashboard/               Client and admin views + shared shell
   ui/                      Buttons, modal, toast, reveal, avatar, headings
 lib/
+  auth/session.ts          Signed session creation and verification
+  currency.ts              Currency detection, defaults, formatting, ROI model
   data.ts                  Mock marketing and dashboard data
   insights-content.ts      Structured article content
   download.ts              CSV export helper
   generate-pdf.ts          Lightweight branded PDF generator
   utils.ts                 Class and format helpers
+middleware.ts              Route protection for /dashboard and /login
+public/testimonials/       Representative Arab portrait photography
 ```
 
 ## Implementation notes
 
 - **Modals** use a portal, focus trap, Escape handling, scroll lock, and stable focus restoration. The focus effect intentionally depends only on `open` so typing in a form never pulls focus out of the active field.
 - **Charts** are hand-built SVG/CSS, keeping the experience fast and dependency-light.
-- **ROI calculator:** the projection is calculated entirely in the browser from the budget and customer value inputs at a 4.8x multiplier. Results update live as you type, with inline validation and no network requests or backend dependency.
+- **ROI calculator:** projections are calculated entirely in the browser from the selected currency, 90-day budget, and customer value. The model is intentionally bounded at 3.2x–4.8x instead of inflating small budgets into multi-million headline numbers.
 - **Downloads** are generated client-side: CSV exports use a UTF-8 BOM for Excel compatibility, and reports use a minimal, valid single-page PDF.
-- **State sharing:** the client and admin views are rendered by the same `DashboardShell`, so a ticket created as a client is immediately visible in the agency ticket desk without a backend.
-- **Accessibility:** semantic landmarks, skip link, visible focus states, labelled dialogs, `aria-current` navigation, keyboard-operable controls, and reduced-motion support are included.
+- **State sharing:** the client and admin views are rendered by the same `DashboardShell`, so a ticket created as a client is immediately visible in the agency ticket desk during that browser session. There is no backend database.
+- **Accessibility:** semantic landmarks, skip link, visible focus states, labelled dialogs, labelled form fields, `aria-current` navigation, keyboard-operable controls, and reduced-motion support are included.
+
+## Testimonial photography
+
+The portraits in `public/testimonials/` are representative stock photographs sourced from [Pexels](https://www.pexels.com/license/) and used under the Pexels license. The names, companies, quotes, and performance figures are illustrative. Stock photography does not imply that the people pictured are real NARA clients or endorse NARA's services.
 
 ## Deployment
 
-Deploy to Vercel, Netlify, or any platform supporting Next.js 14. The project has no required environment variables. If you host it under a different domain, update `metadataBase` in `app/layout.tsx` and the base URL in `app/sitemap.ts` / `app/robots.ts`.
+Deploy to Vercel, Netlify, or any platform supporting Next.js 14. Set all variables from `.env.example` in the hosting provider's environment settings, including a unique production `AUTH_SECRET` and strong passwords. If you host under a different domain, update `metadataBase` in `app/layout.tsx`, the base URL in `app/sitemap.ts` / `app/robots.ts`, and the canonical site URL where applicable.
+
+For horizontally scaled deployments, move login rate limiting to a shared store so attempts are counted consistently across instances.
 
 ---
 

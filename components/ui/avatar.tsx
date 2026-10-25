@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/language-provider";
 import { formatMessage } from "@/lib/i18n/translations";
@@ -7,6 +8,7 @@ import { formatMessage } from "@/lib/i18n/translations";
 type AvatarProps = {
   initials: string;
   name?: string;
+  imageSrc?: string;
   className?: string;
   accent?: string;
   size?: "xs" | "sm" | "md" | "lg";
@@ -22,6 +24,7 @@ const sizes = {
 export function Avatar({
   initials,
   name,
+  imageSrc,
   className,
   accent = "from-[#2563EB] to-[#072465]",
   size = "md",
@@ -31,13 +34,24 @@ export function Avatar({
       role={name ? "img" : undefined}
       aria-label={name}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center rounded-full bg-gradient-to-br font-semibold tracking-[0.06em] text-white ring-1 ring-inset ring-white/15",
+        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br font-semibold tracking-[0.06em] text-white ring-1 ring-inset ring-white/15",
         sizes[size],
         accent,
         className,
       )}
     >
-      {initials}
+      {imageSrc ? (
+        <Image
+          src={imageSrc}
+          alt=""
+          width={96}
+          height={96}
+          sizes="96px"
+          className="h-full w-full object-cover"
+        />
+      ) : (
+        initials
+      )}
     </span>
   );
 }
