@@ -10,39 +10,9 @@ import { Insights } from "@/components/site/insights";
 import { Contact } from "@/components/site/contact";
 import { SiteFooter } from "@/components/site/site-footer";
 
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: "NARA",
-  description:
-    "NARA is a senior-only growth marketing agency specializing in paid media, SEO, creative, social, and conversion optimization.",
-  url: "https://nara.agency",
-  email: "hello@nara.agency",
-  foundingDate: "2019",
-  areaServed: "Worldwide",
-  slogan: "We scale brands beyond boundaries.",
-  serviceType: [
-    "Performance Marketing",
-    "Media Buying",
-    "Social Media Management",
-    "Search Engine Optimization",
-    "Content Creation",
-    "Conversion Rate Optimization",
-  ],
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "4.9",
-    reviewCount: "36",
-  },
-};
-
 export default function HomePage() {
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
       <AnnouncementBar />
       <SiteHeader />
       <main id="main-content">

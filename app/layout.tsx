@@ -56,11 +56,63 @@ export const viewport: Viewport = {
 
 const languageBootstrap = `(function(){try{var l=window.localStorage.getItem("nara-language");if(l!=="ar")return;if(window.location.pathname.indexOf("/dashboard")===0)return;var r=document.documentElement;r.lang="ar";r.dir="rtl";r.dataset.language="ar";}catch(e){}})();`;
 
+const organizationJsonLd = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "@id": "https://nara-agency.vercel.app/#organization",
+  name: "NARA Marketing Agency",
+  alternateName: "NARA",
+  url: "https://nara-agency.vercel.app",
+  logo: "https://nara-agency.vercel.app/brand/nara-monogram.png",
+  description:
+    "NARA Marketing Agency is a growth marketing agency delivering digital marketing, B2B lead generation, automotive marketing, and web development for brands in Egypt and worldwide.",
+  email: "hello@nara.agency",
+  foundingDate: "2019",
+  slogan: "We scale brands beyond boundaries.",
+  areaServed: [
+    { "@type": "Country", name: "Egypt" },
+    { "@type": "City", name: "Alexandria" },
+  ],
+  knowsAbout: [
+    "Digital Marketing",
+    "B2B Lead Generation",
+    "Automotive Marketing",
+    "Web Development",
+  ],
+  hasOfferCatalog: {
+    "@type": "OfferCatalog",
+    name: "Marketing and digital services",
+    itemListElement: [
+      "Digital Marketing",
+      "B2B Lead Generation",
+      "Automotive Marketing",
+      "Web Development",
+    ].map((service, index) => ({
+      "@type": "Offer",
+      position: index + 1,
+      itemOffered: {
+        "@type": "Service",
+        name: service,
+        provider: { "@id": "https://nara-agency.vercel.app/#organization" },
+      },
+    })),
+  },
+  sameAs: [
+    "https://instagram.com/nara.agency",
+    "https://linkedin.com/company/nara-agency",
+    "https://x.com/naraagency",
+  ],
+}).replace(/</g, "\\u003c");
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" dir="ltr" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: languageBootstrap }} />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: organizationJsonLd }}
+        />
       </head>
       <body className="min-h-screen bg-canvas font-sans text-white antialiased">
         <LanguageProvider>
