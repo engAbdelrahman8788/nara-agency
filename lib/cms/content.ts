@@ -1,10 +1,10 @@
-import type { ServiceIcon, Testimonial } from "@/lib/data";
+import type { CaseStudy, CaseStudyVisual, ServiceIcon, Testimonial } from "@/lib/data";
 import { services as seedServices } from "@/lib/data";
 import { currencies, currencyOrder, type CurrencyCode } from "@/lib/currency";
 import { translations, type ServiceCopy } from "@/lib/i18n/translations";
 
 export const CMS_STORAGE_KEY = "nara-cms-content-v1";
-export const CMS_VERSION = 1;
+export const CMS_VERSION = 2;
 
 export type CmsLanguage = "en" | "ar";
 
@@ -68,11 +68,48 @@ export type CmsRoiSettings = {
   presets: Record<CurrencyCode, CmsCurrencyPreset>;
 };
 
+export type CmsCaseStudyCopy = {
+  title: string;
+  niche: string;
+  growthMetric: string;
+  growthLabel: string;
+  description: string;
+};
+
+export type CmsCaseStudyStat = {
+  value: string;
+  label: string;
+};
+
+export type CmsCaseStudy = {
+  id: string;
+  brand: string;
+  monogram: string;
+  period: string;
+  services: string[];
+  stats: CmsCaseStudyStat[];
+  before: string;
+  after: string;
+  beforeLabel: string;
+  afterLabel: string;
+  challenge: string;
+  approach: string[];
+  result: string;
+  quote: string;
+  author: string;
+  visual: CaseStudyVisual;
+  category: string;
+  enabled: boolean;
+  en: CmsCaseStudyCopy;
+  ar: CmsCaseStudyCopy;
+};
+
 export type CmsContent = {
   version: number;
   hero: CmsHeroContent;
   services: CmsService[];
   testimonials: CmsTestimonial[];
+  caseStudies: CmsCaseStudy[];
   roi: CmsRoiSettings;
   updatedAt: string | null;
 };
@@ -102,6 +139,46 @@ export const TESTIMONIAL_ACCENTS = [
   "#28C76F",
   "#F4B942",
 ];
+
+export const CASE_STUDY_VISUALS: CaseStudyVisual[] = [
+  "beauty",
+  "saas",
+  "wellness",
+  "b2b",
+  "home",
+  "fashion",
+];
+
+export const CASE_STUDY_CATEGORIES = [
+  "beauty",
+  "saas",
+  "wellness",
+  "ecommerce",
+  "b2b",
+  "automotive",
+  "realestate",
+  "other",
+];
+
+const CASE_STUDY_CATEGORY_BY_ID: Record<string, string> = {
+  aurel: "beauty",
+  northwind: "saas",
+  solace: "wellness",
+  halden: "ecommerce",
+  elan: "ecommerce",
+  kinetiq: "b2b",
+};
+
+const VISUAL_BY_CATEGORY: Record<string, CaseStudyVisual> = {
+  beauty: "beauty",
+  saas: "saas",
+  wellness: "wellness",
+  ecommerce: "fashion",
+  b2b: "b2b",
+  automotive: "home",
+  realestate: "home",
+  other: "b2b",
+};
 
 const DEFAULT_HERO: CmsHeroContent = {
   en: pickHeroCopy("en"),
@@ -197,6 +274,50 @@ function buildDefaultTestimonials(): CmsTestimonial[] {
   });
 }
 
+function pickCaseStudyCopy(item: CaseStudy): CmsCaseStudyCopy {
+  return {
+    title: item.headline,
+    niche: item.industry,
+    growthMetric: item.heroMetric,
+    growthLabel: item.heroMetricLabel,
+    description: item.summary,
+  };
+}
+
+function buildDefaultCaseStudies(): CmsCaseStudy[] {
+  const arById = new Map(
+    translations.ar.work.items.map((item) => [item.id, item]),
+  );
+
+  return translations.en.work.items.map((enItem) => {
+    const arItem = arById.get(enItem.id) ?? enItem;
+    const category = CASE_STUDY_CATEGORY_BY_ID[enItem.id] ?? "other";
+
+    return {
+      id: enItem.id,
+      brand: enItem.brand,
+      monogram: enItem.monogram,
+      period: enItem.period,
+      services: [...enItem.services],
+      stats: enItem.stats.map((stat) => ({ ...stat })),
+      before: enItem.before,
+      after: enItem.after,
+      beforeLabel: enItem.beforeLabel,
+      afterLabel: enItem.afterLabel,
+      challenge: enItem.challenge,
+      approach: [...enItem.approach],
+      result: enItem.result,
+      quote: enItem.quote,
+      author: enItem.author,
+      visual: enItem.visual,
+      category,
+      enabled: true,
+      en: pickCaseStudyCopy(enItem),
+      ar: pickCaseStudyCopy(arItem),
+    };
+  });
+}
+
 function buildDefaultRoi(): CmsRoiSettings {
   const presets = {} as Record<CurrencyCode, CmsCurrencyPreset>;
 
@@ -220,6 +341,7 @@ const DEFAULT_CONTENT: CmsContent = {
   hero: DEFAULT_HERO,
   services: buildDefaultServices(),
   testimonials: buildDefaultTestimonials(),
+  caseStudies: buildDefaultCaseStudies(),
   roi: buildDefaultRoi(),
   updatedAt: null,
 };
@@ -379,6 +501,155 @@ function sanitizeTestimonial(
     : null;
 }
 
+function inferCaseStudyCategory(...values: string[]): string {
+  const text = values.join(" ").toLowerCase();
+
+  if (
+    /(auto|cars?|vehicle|dealership|scooter|motorcycle|motorbike|showroom|سيار|معرض|دراج)/.test(
+      text,
+    )
+  ) {
+    return "automotive";
+  }
+
+  if (/(real estate|property|properties|عقار|عقاري)/.test(text)) {
+    return "realestate";
+  }
+
+  if (/(skin|beauty|cosmetic|serum|spa|جمال|بشرة|تجميل)/.test(text)) {
+    return "beauty";
+  }
+
+  if (/(saas|software|platform|fintech|برمج|منص)/.test(text)) {
+    return "saas";
+  }
+
+  if (/(b2b|enterprise|wholesale|industrial|أعمال)/.test(text)) {
+    return "b2b";
+  }
+
+  if (/(wellness|health|fitness|supplement|clinic|صحة|عافية|مكمل|لياقة)/.test(text)) {
+    return "wellness";
+  }
+
+  if (
+    /(fashion|apparel|clothing|ecommerce|e-commerce|shop|store|أزياء|ملابس|متجر|تجارة)/.test(
+      text,
+    )
+  ) {
+    return "ecommerce";
+  }
+
+  return "other";
+}
+
+function readCaseStudyCategory(value: unknown, fallback: string): string {
+  return typeof value === "string" && CASE_STUDY_CATEGORIES.includes(value)
+    ? value
+    : fallback;
+}
+
+function readCaseStudyVisual(
+  value: unknown,
+  category: string,
+): CaseStudyVisual {
+  if (CASE_STUDY_VISUALS.includes(value as CaseStudyVisual)) {
+    return value as CaseStudyVisual;
+  }
+
+  return VISUAL_BY_CATEGORY[category] ?? "b2b";
+}
+
+function sanitizeCaseStudyCopy(
+  raw: unknown,
+  fallback: CmsCaseStudyCopy,
+): CmsCaseStudyCopy {
+  const record = isRecord(raw) ? raw : {};
+
+  return {
+    title: readText(record.title, fallback.title),
+    niche: readText(record.niche, fallback.niche),
+    growthMetric: readText(record.growthMetric, fallback.growthMetric),
+    growthLabel: readText(record.growthLabel, fallback.growthLabel),
+    description: readText(record.description, fallback.description),
+  };
+}
+
+function sanitizeCaseStudyStats(
+  raw: unknown,
+  fallback: CmsCaseStudyStat[],
+): CmsCaseStudyStat[] {
+  if (!Array.isArray(raw)) return [...fallback];
+
+  const stats = raw
+    .filter(isRecord)
+    .map((stat) => ({
+      value: readText(stat.value, "").trim(),
+      label: readText(stat.label, "").trim(),
+    }))
+    .filter((stat) => stat.value && stat.label)
+    .slice(0, 6);
+
+  return stats.length > 0 ? stats : [...fallback];
+}
+
+function sanitizeCaseStudy(raw: unknown, index: number): CmsCaseStudy | null {
+  if (!isRecord(raw)) return null;
+
+  const fallback =
+    DEFAULT_CONTENT.caseStudies.find((item) => item.id === raw.id) ??
+    DEFAULT_CONTENT.caseStudies[index % DEFAULT_CONTENT.caseStudies.length];
+
+  const id =
+    typeof raw.id === "string" && raw.id.trim()
+      ? raw.id.trim()
+      : `case-${index + 1}`;
+
+  const en = sanitizeCaseStudyCopy(raw.en, fallback.en);
+  const ar = sanitizeCaseStudyCopy(raw.ar, fallback.ar);
+
+  if (!en.title.trim() && !ar.title.trim()) return null;
+
+  const category = readCaseStudyCategory(
+    raw.category,
+    inferCaseStudyCategory(en.niche, ar.niche, en.title, ar.title),
+  );
+  const brand =
+    readText(raw.brand, fallback.brand).trim() || en.title.trim().slice(0, 24);
+  const growthMetric = en.growthMetric.trim() || ar.growthMetric.trim();
+  const growthLabel = en.growthLabel.trim() || ar.growthLabel.trim();
+  const metricFallback: CmsCaseStudyStat[] =
+    growthMetric || growthLabel
+      ? [{ value: growthMetric || "—", label: growthLabel || "Growth" }]
+      : [];
+
+  return {
+    id,
+    brand,
+    monogram:
+      readText(raw.monogram, fallback.monogram).trim().slice(0, 2) ||
+      brand.slice(0, 1).toUpperCase(),
+    period: readText(raw.period, fallback.period).trim() || "Recent engagement",
+    services: readTextArray(raw.services, fallback.services),
+    stats: sanitizeCaseStudyStats(raw.stats, metricFallback),
+    before: readText(raw.before, fallback.before).trim(),
+    after: readText(raw.after, fallback.after).trim() || growthMetric,
+    beforeLabel: readText(raw.beforeLabel, fallback.beforeLabel).trim(),
+    afterLabel: readText(raw.afterLabel, fallback.afterLabel).trim(),
+    challenge:
+      readText(raw.challenge, fallback.challenge).trim() || en.description,
+    approach: readTextArray(raw.approach, fallback.approach),
+    result: readText(raw.result, fallback.result).trim() || en.description,
+    quote: readText(raw.quote, fallback.quote).trim(),
+    author: readText(raw.author, fallback.author).trim(),
+    visual: readCaseStudyVisual(raw.visual, category),
+    category,
+    enabled: readBoolean(raw.enabled, true),
+    en,
+    ar,
+  };
+}
+
 function sanitizeRoi(raw: unknown): CmsRoiSettings {
   const fallback = DEFAULT_CONTENT.roi;
   const record = isRecord(raw) ? raw : {};
@@ -441,6 +712,18 @@ export function sanitizeContent(raw: unknown): CmsContent {
         en: { ...item.en },
         ar: { ...item.ar },
       }));
+  const caseStudies = Array.isArray(raw.caseStudies)
+    ? raw.caseStudies
+        .map(sanitizeCaseStudy)
+        .filter((item): item is CmsCaseStudy => Boolean(item))
+    : DEFAULT_CONTENT.caseStudies.map((item) => ({
+        ...item,
+        services: [...item.services],
+        stats: item.stats.map((stat) => ({ ...stat })),
+        approach: [...item.approach],
+        en: { ...item.en },
+        ar: { ...item.ar },
+      }));
 
   return {
     version: CMS_VERSION,
@@ -450,6 +733,7 @@ export function sanitizeContent(raw: unknown): CmsContent {
     },
     services,
     testimonials,
+    caseStudies,
     roi: sanitizeRoi(raw.roi),
     updatedAt:
       typeof raw.updatedAt === "string" && raw.updatedAt.trim()
@@ -510,6 +794,54 @@ export function getLocalizedTestimonials(
         ...copy,
       };
     });
+}
+
+export type ResolvedCaseStudy = CmsCaseStudyCopy & {
+  id: string;
+  brand: string;
+  monogram: string;
+  period: string;
+  services: string[];
+  stats: CmsCaseStudyStat[];
+  before: string;
+  after: string;
+  beforeLabel: string;
+  afterLabel: string;
+  challenge: string;
+  approach: string[];
+  result: string;
+  quote: string;
+  author: string;
+  visual: CaseStudyVisual;
+  category: string;
+};
+
+export function getLocalizedCaseStudies(
+  content: CmsContent,
+  language: CmsLanguage,
+): ResolvedCaseStudy[] {
+  return content.caseStudies
+    .filter((study) => study.enabled)
+    .map((study) => ({
+      id: study.id,
+      brand: study.brand,
+      monogram: study.monogram,
+      period: study.period,
+      services: study.services,
+      stats: study.stats,
+      before: study.before,
+      after: study.after,
+      beforeLabel: study.beforeLabel,
+      afterLabel: study.afterLabel,
+      challenge: study.challenge,
+      approach: study.approach,
+      result: study.result,
+      quote: study.quote,
+      author: study.author,
+      visual: study.visual,
+      category: study.category,
+      ...study[language],
+    }));
 }
 
 export function getAverageRating(

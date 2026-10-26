@@ -59,6 +59,9 @@ const statusTones: Record<string, { dot: string; className: string }> = {
   Draft: { dot: "bg-white/40", className: "border-white/10 bg-white/[0.04] text-white/55" },
   Approved: { dot: "bg-emerald-400", className: "border-emerald-400/15 bg-emerald-400/[0.08] text-emerald-300" },
   "In review": { dot: "bg-amber-400", className: "border-amber-400/15 bg-amber-400/[0.08] text-amber-300" },
+  New: { dot: "bg-amber-400", className: "border-amber-400/15 bg-amber-400/[0.08] text-amber-300" },
+  Contacted: { dot: "bg-electric-soft", className: "border-electric/20 bg-electric/[0.09] text-electric-pale" },
+  Won: { dot: "bg-emerald-400", className: "border-emerald-400/15 bg-emerald-400/[0.08] text-emerald-300" },
 };
 
 const priorityTones: Record<string, string> = {

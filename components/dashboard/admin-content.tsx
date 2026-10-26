@@ -35,16 +35,20 @@ import {
   Star,
   Target,
   Trash2,
+  TrendingUp,
   Upload,
   Wallet,
   X,
 } from "lucide-react";
-import type { ServiceIcon } from "@/lib/data";
+import type { CaseStudyVisual, ServiceIcon } from "@/lib/data";
 import {
-  getAverageRating,
+  CASE_STUDY_CATEGORIES,
+  CASE_STUDY_VISUALS,
   SERVICE_ACCENTS,
   SERVICE_ICON_OPTIONS,
   TESTIMONIAL_ACCENTS,
+  type CmsCaseStudy,
+  type CmsCaseStudyCopy,
   type CmsContent,
   type CmsCurrencyPreset,
   type CmsHeroContent,
@@ -73,7 +77,7 @@ import {
   SectionHeader,
 } from "@/components/dashboard/ui";
 
-type ContentTab = "hero" | "services" | "testimonials" | "roi";
+type ContentTab = "hero" | "services" | "testimonials" | "caseStudies" | "roi";
 
 type TabDefinition = {
   id: ContentTab;
@@ -85,6 +89,7 @@ const tabs: TabDefinition[] = [
   { id: "hero", label: "Hero section", icon: Sparkles },
   { id: "services", label: "Services", icon: Layers },
   { id: "testimonials", label: "Testimonials", icon: Star },
+  { id: "caseStudies", label: "Case studies", icon: TrendingUp },
   { id: "roi", label: "ROI model", icon: Wallet },
 ];
 
@@ -99,6 +104,37 @@ const iconOptions: { value: ServiceIcon; label: string; icon: LucideIcon }[] = [
 const accentPalette = Array.from(
   new Set([...Object.values(SERVICE_ACCENTS), ...TESTIMONIAL_ACCENTS]),
 );
+
+const CASE_STUDY_VISUAL_LABELS: Record<CaseStudyVisual, string> = {
+  beauty: "Beauty & skincare",
+  saas: "SaaS dashboard",
+  wellness: "Wellness product",
+  b2b: "B2B network",
+  home: "Home & interiors",
+  fashion: "Fashion editorial",
+};
+
+const CASE_STUDY_CATEGORY_LABELS: Record<string, string> = {
+  beauty: "Beauty",
+  saas: "SaaS",
+  wellness: "Wellness",
+  ecommerce: "Ecommerce",
+  b2b: "B2B",
+  automotive: "Automotive",
+  realestate: "Real estate",
+  other: "Other",
+};
+
+const CASE_STUDY_VISUAL_BY_CATEGORY: Record<string, CaseStudyVisual> = {
+  beauty: "beauty",
+  saas: "saas",
+  wellness: "wellness",
+  ecommerce: "fashion",
+  b2b: "b2b",
+  automotive: "home",
+  realestate: "home",
+  other: "b2b",
+};
 
 const inputClass =
   "h-10 w-full rounded-lg border border-white/[0.08] bg-white/[0.025] px-3.5 text-[0.84rem] text-white placeholder:text-white/38 transition-colors focus:border-electric/45";
@@ -339,7 +375,9 @@ export function AdminContent() {
   const enabledTestimonials = content.testimonials.filter(
     (testimonial) => testimonial.enabled,
   );
-  const averageRating = getAverageRating(enabledTestimonials);
+  const enabledCaseStudies = content.caseStudies.filter(
+    (study) => study.enabled,
+  );
   const savedLabel = formatSavedAt(content.updatedAt);
 
   const saveHero = (hero: CmsHeroContent) => {
@@ -356,6 +394,10 @@ export function AdminContent() {
 
   const saveTestimonials = (testimonials: CmsTestimonial[]) => {
     update((current) => ({ ...current, testimonials }));
+  };
+
+  const saveCaseStudies = (caseStudies: CmsCaseStudy[]) => {
+    update((current) => ({ ...current, caseStudies }));
   };
 
   const saveRoi = (roi: CmsRoiSettings) => {
@@ -410,7 +452,7 @@ export function AdminContent() {
     setResetOpen(false);
     toast({
       title: "Content reset",
-      description: "The original hero, services, testimonials, and ROI settings are restored.",
+      description: "The original hero, services, testimonials, case studies, and ROI settings are restored.",
     });
   };
 
@@ -430,11 +472,11 @@ export function AdminContent() {
       detail: "First live review is featured",
     },
     {
-      label: "Average rating",
-      value: averageRating ? averageRating.toFixed(1) : "—",
-      icon: ShieldCheck,
+      label: "Live case studies",
+      value: `${enabledCaseStudies.length}/${content.caseStudies.length}`,
+      icon: TrendingUp,
       tone: "border-emerald-400/15 bg-emerald-400/[0.06] text-emerald-300",
-      detail: `${enabledTestimonials.length} live reviews`,
+      detail: "Published in the portfolio",
     },
     {
       label: "Last saved",
@@ -454,7 +496,7 @@ export function AdminContent() {
       <PageHeader
         eyebrow="Content studio"
         title="Your website, live."
-        description="Edit the public marketing site without a redeploy. Hero copy, services, testimonials, and the ROI model all update in place."
+        description="Edit the public marketing site without a redeploy. Hero copy, services, testimonials, case studies, and the ROI model all update in place."
         actions={
           <>
             <a
@@ -589,7 +631,9 @@ export function AdminContent() {
               ? content.services.length
               : item.id === "testimonials"
                 ? content.testimonials.length
-                : null;
+                : item.id === "caseStudies"
+                  ? content.caseStudies.length
+                  : null;
 
           return (
             <button
@@ -657,6 +701,17 @@ export function AdminContent() {
           />
         </div>
         <div
+          id="content-panel-caseStudies"
+          role="tabpanel"
+          aria-labelledby="content-tab-caseStudies"
+          hidden={tab !== "caseStudies"}
+        >
+          <CaseStudiesEditor
+            caseStudies={content.caseStudies}
+            onChange={saveCaseStudies}
+          />
+        </div>
+        <div
           id="content-panel-roi"
           role="tabpanel"
           aria-labelledby="content-tab-roi"
@@ -687,9 +742,9 @@ export function AdminContent() {
             Reset all website content?
           </h2>
           <p className="mt-2 text-[0.8rem] leading-6 text-white/48">
-            This restores the original hero copy, services, testimonials, and ROI
-            settings for every tab in this browser. Export a backup first if you
-            want to keep your edits.
+            This restores the original hero copy, services, testimonials, case
+            studies, and ROI settings for every tab in this browser. Export a
+            backup first if you want to keep your edits.
           </p>
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <button
@@ -2122,6 +2177,853 @@ function TestimonialsEditor({
                   <>
                     <Plus className="h-3.5 w-3.5" />
                     Add testimonial
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
+    </DashboardCard>
+  );
+}
+
+type CaseStudyCopyDraft = {
+  title: string;
+  niche: string;
+  growthMetric: string;
+  growthLabel: string;
+  description: string;
+};
+
+type CaseStudyDraft = {
+  id: string | null;
+  brand: string;
+  monogram: string;
+  period: string;
+  category: string;
+  visual: CaseStudyVisual;
+  enabled: boolean;
+  services: string;
+  stats: string;
+  before: string;
+  after: string;
+  beforeLabel: string;
+  afterLabel: string;
+  challenge: string;
+  approach: string;
+  result: string;
+  quote: string;
+  author: string;
+  en: CaseStudyCopyDraft;
+  ar: CaseStudyCopyDraft;
+};
+
+function emptyCaseStudyCopy(): CaseStudyCopyDraft {
+  return {
+    title: "",
+    niche: "",
+    growthMetric: "",
+    growthLabel: "",
+    description: "",
+  };
+}
+
+function blankCaseStudyDraft(): CaseStudyDraft {
+  return {
+    id: null,
+    brand: "",
+    monogram: "",
+    period: "",
+    category: "ecommerce",
+    visual: "fashion",
+    enabled: true,
+    services: "",
+    stats: "",
+    before: "",
+    after: "",
+    beforeLabel: "Before",
+    afterLabel: "After",
+    challenge: "",
+    approach: "",
+    result: "",
+    quote: "",
+    author: "",
+    en: emptyCaseStudyCopy(),
+    ar: emptyCaseStudyCopy(),
+  };
+}
+
+function caseStudyToDraft(study: CmsCaseStudy): CaseStudyDraft {
+  const copyToDraft = (copy: CmsCaseStudyCopy): CaseStudyCopyDraft => ({
+    title: copy.title,
+    niche: copy.niche,
+    growthMetric: copy.growthMetric,
+    growthLabel: copy.growthLabel,
+    description: copy.description,
+  });
+
+  return {
+    id: study.id,
+    brand: study.brand,
+    monogram: study.monogram,
+    period: study.period,
+    category: study.category,
+    visual: study.visual,
+    enabled: study.enabled,
+    services: study.services.join(", "),
+    stats: study.stats
+      .map((stat) => `${stat.value} | ${stat.label}`)
+      .join("\n"),
+    before: study.before,
+    after: study.after,
+    beforeLabel: study.beforeLabel,
+    afterLabel: study.afterLabel,
+    challenge: study.challenge,
+    approach: study.approach.join("\n"),
+    result: study.result,
+    quote: study.quote,
+    author: study.author,
+    en: copyToDraft(study.en),
+    ar: copyToDraft(study.ar),
+  };
+}
+
+function parseCaseStudyStats(value: string) {
+  return splitLines(value)
+    .map((line) => {
+      const [rawValue, ...labelParts] = line.split("|");
+      return {
+        value: rawValue.trim(),
+        label: labelParts.join("|").trim() || "Result",
+      };
+    })
+    .filter((stat) => stat.value)
+    .slice(0, 6);
+}
+
+function caseStudyFromDraft(draft: CaseStudyDraft): CmsCaseStudy {
+  const cleanCopy = (copy: CaseStudyCopyDraft): CmsCaseStudyCopy => ({
+    title: copy.title.trim(),
+    niche: copy.niche.trim(),
+    growthMetric: copy.growthMetric.trim(),
+    growthLabel: copy.growthLabel.trim(),
+    description: copy.description.trim(),
+  });
+
+  const en = cleanCopy(draft.en);
+  const ar = cleanCopy(draft.ar);
+  const brand = draft.brand.trim() || en.title.slice(0, 24);
+  const growthMetric = en.growthMetric || ar.growthMetric;
+  const growthLabel = en.growthLabel || ar.growthLabel;
+  const parsedStats = parseCaseStudyStats(draft.stats);
+  const stats =
+    parsedStats.length > 0
+      ? parsedStats
+      : growthMetric
+        ? [{ value: growthMetric, label: growthLabel || "Growth" }]
+        : [];
+
+  return {
+    id: draft.id ?? uid("case"),
+    brand,
+    monogram:
+      draft.monogram.trim().slice(0, 2) ||
+      brand.slice(0, 1).toUpperCase() ||
+      "N",
+    period: draft.period.trim() || "Recent engagement",
+    services: splitTags(draft.services),
+    stats,
+    before: draft.before.trim(),
+    after: draft.after.trim() || growthMetric,
+    beforeLabel: draft.beforeLabel.trim() || "Before",
+    afterLabel: draft.afterLabel.trim() || "After",
+    challenge: draft.challenge.trim() || en.description,
+    approach: splitLines(draft.approach),
+    result: draft.result.trim() || en.description,
+    quote: draft.quote.trim(),
+    author: draft.author.trim(),
+    visual: draft.visual,
+    category: draft.category,
+    enabled: draft.enabled,
+    en,
+    ar,
+  };
+}
+
+function CaseStudiesEditor({
+  caseStudies,
+  onChange,
+}: {
+  caseStudies: CmsCaseStudy[];
+  onChange: (caseStudies: CmsCaseStudy[]) => void;
+}) {
+  const { toast } = useToast();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<CaseStudyDraft>(blankCaseStudyDraft);
+  const [language, setLanguage] = useState<CmsLanguage>("en");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const openAdd = () => {
+    setEditingId(null);
+    setDraft(blankCaseStudyDraft());
+    setLanguage("en");
+    setErrors({});
+    setConfirmDelete(false);
+    setModalOpen(true);
+  };
+
+  const openEdit = (study: CmsCaseStudy) => {
+    setEditingId(study.id);
+    setDraft(caseStudyToDraft(study));
+    setLanguage("en");
+    setErrors({});
+    setConfirmDelete(false);
+    setModalOpen(true);
+  };
+
+  const updateCopy = (field: keyof CaseStudyCopyDraft, value: string) => {
+    setDraft((current) => ({
+      ...current,
+      [language]: { ...current[language], [field]: value },
+    }));
+    setErrors((current) => {
+      const key = `${language}.${field}`;
+      if (!current[key]) return current;
+      const next = { ...current };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const submit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextErrors: Record<string, string> = {};
+
+    for (const code of ["en", "ar"] as const) {
+      if (!draft[code].title.trim()) {
+        nextErrors[`${code}.title`] = "Enter a case study title.";
+      }
+      if (!draft[code].niche.trim()) {
+        nextErrors[`${code}.niche`] = "Enter the client niche.";
+      }
+      if (!draft[code].growthMetric.trim()) {
+        nextErrors[`${code}.growthMetric`] = "Enter a growth metric.";
+      }
+      if (!draft[code].description.trim()) {
+        nextErrors[`${code}.description`] = "Enter a description.";
+      }
+    }
+
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    const study = caseStudyFromDraft(draft);
+    const next = editingId
+      ? caseStudies.map((item) => (item.id === editingId ? study : item))
+      : [...caseStudies, study];
+
+    onChange(next);
+    setModalOpen(false);
+    toast({
+      title: editingId ? "Case study updated" : "Case study added",
+      description: `${study.brand} is ${
+        editingId ? "updated" : "live"
+      } in the public portfolio.`,
+    });
+  };
+
+  const remove = () => {
+    if (!editingId) return;
+    const removed = caseStudies.find((study) => study.id === editingId);
+
+    onChange(caseStudies.filter((study) => study.id !== editingId));
+    setModalOpen(false);
+    setConfirmDelete(false);
+    setEditingId(null);
+    toast({
+      title: "Case study removed",
+      description: `${removed?.brand ?? "The story"} has been removed from the public portfolio.`,
+    });
+  };
+
+  const move = (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= caseStudies.length) return;
+    const next = [...caseStudies];
+    [next[index], next[target]] = [next[target], next[index]];
+    onChange(next);
+  };
+
+  const toggle = (id: string) => {
+    onChange(
+      caseStudies.map((study) =>
+        study.id === id ? { ...study, enabled: !study.enabled } : study,
+      ),
+    );
+  };
+
+  return (
+    <DashboardCard>
+      <SectionHeader
+        title="Case studies"
+        description="Publish proof from the portfolio. Add the headline, niche, growth metric, and story — the public work section updates instantly."
+        action={
+          <Button size="sm" onClick={openAdd}>
+            <Plus className="h-3.5 w-3.5" />
+            Add case study
+          </Button>
+        }
+      />
+
+      {caseStudies.length === 0 ? (
+        <div className="mt-5">
+          <EmptyState
+            icon={TrendingUp}
+            title="No case studies yet"
+            description="Add the first story to populate the public portfolio section."
+            action={
+              <Button size="sm" onClick={openAdd}>
+                <Plus className="h-3.5 w-3.5" />
+                Add case study
+              </Button>
+            }
+          />
+        </div>
+      ) : (
+        <div className="mt-5 space-y-3">
+          {caseStudies.map((study, index) => (
+            <div
+              key={study.id}
+              className="rounded-xl border border-white/[0.07] bg-white/[0.015] p-4 transition-colors hover:border-white/[0.12]"
+            >
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex min-w-0 items-start gap-3">
+                  <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-electric/20 bg-electric/[0.08] font-display text-[0.8rem] font-semibold text-electric-pale">
+                    {study.monogram || study.brand.slice(0, 1) || "N"}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-[0.84rem] font-semibold tracking-[0.02em] text-white/85">
+                        {study.brand}
+                      </p>
+                      <StatusBadge tone={study.enabled ? "live" : "hidden"}>
+                        {study.enabled ? "Live" : "Hidden"}
+                      </StatusBadge>
+                      <span className="rounded border border-white/[0.08] bg-black/15 px-1.5 py-0.5 text-[0.58rem] text-white/42">
+                        {CASE_STUDY_CATEGORY_LABELS[study.category] ??
+                          study.category}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-[0.7rem] text-white/38" dir="rtl">
+                      {study.ar.title}
+                    </p>
+                    <p className="mt-2 max-w-2xl text-[0.78rem] font-medium leading-5 text-white/68">
+                      {study.en.title}
+                    </p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[0.64rem] text-white/38">
+                      <span className="font-semibold text-electric-pale/75">
+                        {study.en.growthMetric ||
+                          study.ar.growthMetric ||
+                          "No metric"}
+                      </span>
+                      <span>{study.en.growthLabel || "Growth"}</span>
+                      <span className="h-2.5 w-px bg-white/10" />
+                      <span>{study.services.length} services</span>
+                      <span className="h-2.5 w-px bg-white/10" />
+                      <span>{study.stats.length} stats</span>
+                    </div>
+                    <p className="mt-2 line-clamp-2 max-w-2xl text-[0.74rem] leading-5 text-white/45">
+                      {study.en.description}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-0.5 self-end sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => move(index, -1)}
+                    disabled={index === 0}
+                    aria-label={`Move ${study.brand} up`}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-white/38 transition hover:bg-white/[0.05] hover:text-white disabled:pointer-events-none disabled:opacity-25"
+                  >
+                    <ArrowUp className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => move(index, 1)}
+                    disabled={index === caseStudies.length - 1}
+                    aria-label={`Move ${study.brand} down`}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-white/38 transition hover:bg-white/[0.05] hover:text-white disabled:pointer-events-none disabled:opacity-25"
+                  >
+                    <ArrowDown className="h-3.5 w-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggle(study.id)}
+                    aria-label={
+                      study.enabled
+                        ? `Hide ${study.brand}`
+                        : `Publish ${study.brand}`
+                    }
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-white/38 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    {study.enabled ? (
+                      <Eye className="h-3.5 w-3.5" />
+                    ) : (
+                      <EyeOff className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openEdit(study)}
+                    aria-label={`Edit ${study.brand}`}
+                    className="flex h-7 w-7 items-center justify-center rounded-md text-white/38 transition hover:bg-white/[0.05] hover:text-white"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <Modal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        labelledBy="case-study-editor-title"
+        size="xl"
+      >
+        <form onSubmit={submit} noValidate>
+          <div className="border-b border-white/[0.08] p-5 pr-14 sm:p-6 sm:pr-16">
+            <p className="text-[0.65rem] font-semibold uppercase tracking-[0.17em] text-electric-pale/55">
+              {editingId ? "Edit case study" : "New case study"}
+            </p>
+            <h2
+              id="case-study-editor-title"
+              className="mt-1.5 font-display text-2xl font-medium tracking-tight text-white"
+            >
+              {editingId
+                ? draft.brand || draft.en.title || "Case study details"
+                : "Add a case study"}
+            </h2>
+            <p className="mt-1.5 text-[0.8rem] text-white/48">
+              Everything here appears in the public portfolio — both languages,
+              the cover art, and the detail modal.
+            </p>
+          </div>
+
+          <div className="max-h-[68vh] space-y-5 overflow-y-auto p-5 sm:p-6">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <Field label="Brand" error={errors.brand}>
+                <input
+                  value={draft.brand}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      brand: event.target.value,
+                    }))
+                  }
+                  placeholder="AUREL"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Monogram" hint="1–2 characters.">
+                <input
+                  value={draft.monogram}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      monogram: event.target.value,
+                    }))
+                  }
+                  maxLength={2}
+                  placeholder={draft.brand.slice(0, 1) || "A"}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Period" hint="e.g. 7 months">
+                <input
+                  value={draft.period}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      period: event.target.value,
+                    }))
+                  }
+                  placeholder="7 months"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Portfolio category">
+                <select
+                  value={draft.category}
+                  onChange={(event) => {
+                    const category = event.target.value;
+                    setDraft((current) => ({
+                      ...current,
+                      category,
+                      visual:
+                        CASE_STUDY_VISUAL_BY_CATEGORY[category] ?? current.visual,
+                    }));
+                  }}
+                  className={inputClass}
+                >
+                  {CASE_STUDY_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {CASE_STUDY_CATEGORY_LABELS[category] ?? category}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Cover artwork">
+                <select
+                  value={draft.visual}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      visual: event.target.value as CaseStudyVisual,
+                    }))
+                  }
+                  className={inputClass}
+                >
+                  {CASE_STUDY_VISUALS.map((visual) => (
+                    <option key={visual} value={visual}>
+                      {CASE_STUDY_VISUAL_LABELS[visual]}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+
+            <Toggle
+              checked={draft.enabled}
+              onChange={(enabled) =>
+                setDraft((current) => ({ ...current, enabled }))
+              }
+              label="Visible in the portfolio"
+              description={
+                draft.enabled
+                  ? "Published with the public case studies."
+                  : "Hidden until you publish it."
+              }
+            />
+
+            <Field
+              label="Services"
+              hint="Comma-separated. e.g. Paid Media, Creative, CRO"
+            >
+              <input
+                value={draft.services}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    services: event.target.value,
+                  }))
+                }
+                placeholder="Paid Media, Creative, CRO"
+                className={inputClass}
+              />
+            </Field>
+
+            <Field
+              label="Headline stats"
+              hint="One per line as 'value | label'. e.g. 5.2x | Blended ROAS"
+            >
+              <textarea
+                rows={3}
+                value={draft.stats}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    stats: event.target.value,
+                  }))
+                }
+                placeholder={"5.2x | Blended ROAS\n−37% | CAC"}
+                className={textareaClass}
+              />
+            </Field>
+
+            <div className="border-t border-white/[0.06] pt-4">
+              <p className="text-[0.72rem] font-medium text-white/55">
+                Before / after
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Before value">
+                <input
+                  value={draft.before}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      before: event.target.value,
+                    }))
+                  }
+                  placeholder="$112k"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="After value">
+                <input
+                  value={draft.after}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      after: event.target.value,
+                    }))
+                  }
+                  placeholder="$461k"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Before label">
+                <input
+                  value={draft.beforeLabel}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      beforeLabel: event.target.value,
+                    }))
+                  }
+                  placeholder="Monthly revenue before"
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="After label">
+                <input
+                  value={draft.afterLabel}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      afterLabel: event.target.value,
+                    }))
+                  }
+                  placeholder="Monthly revenue after"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            <div className="border-t border-white/[0.06] pt-4">
+              <p className="text-[0.72rem] font-medium text-white/55">
+                Case story
+              </p>
+            </div>
+
+            <Field label="The challenge">
+              <textarea
+                rows={3}
+                value={draft.challenge}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    challenge: event.target.value,
+                  }))
+                }
+                className={textareaClass}
+              />
+            </Field>
+
+            <Field label="Our approach" hint="One step per line.">
+              <textarea
+                rows={3}
+                value={draft.approach}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    approach: event.target.value,
+                  }))
+                }
+                className={textareaClass}
+              />
+            </Field>
+
+            <Field label="The result">
+              <textarea
+                rows={3}
+                value={draft.result}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    result: event.target.value,
+                  }))
+                }
+                className={textareaClass}
+              />
+            </Field>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Field label="Client quote">
+                <textarea
+                  rows={3}
+                  value={draft.quote}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      quote: event.target.value,
+                    }))
+                  }
+                  className={textareaClass}
+                />
+              </Field>
+              <Field label="Quote author">
+                <input
+                  value={draft.author}
+                  onChange={(event) =>
+                    setDraft((current) => ({
+                      ...current,
+                      author: event.target.value,
+                    }))
+                  }
+                  placeholder="Noura Al-Harbi, Head of Growth at AUREL"
+                  className={inputClass}
+                />
+              </Field>
+            </div>
+
+            <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] pt-4">
+              <p className="text-[0.72rem] font-medium text-white/55">
+                Localized portfolio copy
+              </p>
+              <LanguageToggle value={language} onChange={setLanguage} />
+            </div>
+
+            <div
+              dir={language === "ar" ? "rtl" : "ltr"}
+              className="space-y-4"
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Title"
+                  hint="The main headline in the portfolio card."
+                  error={errors[`${language}.title`]}
+                >
+                  <input
+                    value={draft[language].title}
+                    onChange={(event) =>
+                      updateCopy("title", event.target.value)
+                    }
+                    placeholder="From quiet cult favorite to category leader."
+                    className={inputClass}
+                  />
+                </Field>
+                <Field
+                  label="Client niche"
+                  hint="e.g. Luxury skincare"
+                  error={errors[`${language}.niche`]}
+                >
+                  <input
+                    value={draft[language].niche}
+                    onChange={(event) =>
+                      updateCopy("niche", event.target.value)
+                    }
+                    placeholder="Luxury skincare"
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Field
+                  label="Growth metric"
+                  hint="e.g. +40%"
+                  error={errors[`${language}.growthMetric`]}
+                >
+                  <input
+                    value={draft[language].growthMetric}
+                    onChange={(event) =>
+                      updateCopy("growthMetric", event.target.value)
+                    }
+                    placeholder="+40%"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="Growth label" hint="e.g. More leads">
+                  <input
+                    value={draft[language].growthLabel}
+                    onChange={(event) =>
+                      updateCopy("growthLabel", event.target.value)
+                    }
+                    placeholder="Qualified leads"
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+
+              <Field
+                label="Description"
+                error={errors[`${language}.description`]}
+              >
+                <textarea
+                  rows={4}
+                  value={draft[language].description}
+                  onChange={(event) =>
+                    updateCopy("description", event.target.value)
+                  }
+                  className={textareaClass}
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="flex flex-col-reverse gap-3 border-t border-white/[0.08] p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+            {editingId ? (
+              confirmDelete ? (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-red-400/20 bg-red-400/[0.05] px-3 py-2 text-[0.7rem] text-red-200/75">
+                  <span>Remove this case study?</span>
+                  <button
+                    type="button"
+                    onClick={remove}
+                    className="font-semibold text-red-300 underline decoration-red-300/40 underline-offset-2 transition hover:text-red-200"
+                  >
+                    Yes, remove
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDelete(false)}
+                    className="text-white/55 transition hover:text-white"
+                  >
+                    Keep
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmDelete(true)}
+                  className="inline-flex items-center gap-1.5 self-start rounded-md px-1 py-1 text-[0.72rem] font-medium text-red-300/65 transition hover:text-red-200 sm:self-auto"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete case study
+                </button>
+              )
+            ) : (
+              <span />
+            )}
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                className={buttonStyles({ variant: "secondary", size: "md" })}
+              >
+                Cancel
+              </button>
+              <button type="submit" className={buttonStyles({ size: "md" })}>
+                {editingId ? (
+                  <>
+                    <Check className="h-3.5 w-3.5" />
+                    Save case study
+                  </>
+                ) : (
+                  <>
+                    <Plus className="h-3.5 w-3.5" />
+                    Add case study
                   </>
                 )}
               </button>

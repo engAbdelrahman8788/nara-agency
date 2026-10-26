@@ -32,15 +32,17 @@ import {
 import { cn } from "@/lib/utils";
 
 type Projection = {
-  estimatedRevenue: number;
+  generatedRevenue: number;
+  totalRevenue: number;
   roiMultiplier: number;
-  projectedCustomers: number;
-  netReturn: number;
+  projectedLeads: number;
+  liftPercent: number;
 };
 
 type TouchedFields = {
+  revenue: boolean;
   budget: boolean;
-  itemValue: boolean;
+  ticket: boolean;
 };
 
 function parsePositiveInput(value: string): number | null {
@@ -49,22 +51,136 @@ function parsePositiveInput(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
+function defaultRevenueFor(config: CurrencyConfig): number {
+  return config.defaultBudget * 4;
+}
+
+function defaultRevenueStep(config: CurrencyConfig): number {
+  return config.budgetStep * 5;
+}
+
 function buildProjection(
+  revenue: number,
   budget: number,
-  itemValue: number,
+  ticket: number,
   roiMultiplier: number,
 ): Projection | null {
-  const rawRevenue = budget * roiMultiplier;
-  if (!Number.isFinite(rawRevenue) || rawRevenue <= 0) return null;
+  const rawGenerated = budget * roiMultiplier;
+  if (!Number.isFinite(rawGenerated) || rawGenerated <= 0) return null;
 
-  const estimatedRevenue = Math.round((rawRevenue + Number.EPSILON) * 100) / 100;
+  const round = (value: number) =>
+    Math.round((value + Number.EPSILON) * 100) / 100;
 
   return {
-    estimatedRevenue,
+    generatedRevenue: round(rawGenerated),
+    totalRevenue: round(revenue + rawGenerated),
     roiMultiplier,
-    projectedCustomers: Math.floor(estimatedRevenue / itemValue),
-    netReturn: Math.round((estimatedRevenue - budget + Number.EPSILON) * 100) / 100,
+    projectedLeads: Math.max(0, Math.round(rawGenerated / ticket)),
+    liftPercent: (rawGenerated / revenue) * 100,
   };
+}
+
+function SliderField({
+  id,
+  label,
+  hint,
+  currency,
+  language,
+  value,
+  placeholder,
+  error,
+  min,
+  max,
+  step,
+  onChange,
+  onBlur,
+}: {
+  id: string;
+  label: string;
+  hint?: string;
+  currency: CurrencyCode;
+  language: "en" | "ar";
+  value: string;
+  placeholder: string;
+  error?: string;
+  min: number;
+  max: number;
+  step: number;
+  onChange: (value: string) => void;
+  onBlur: () => void;
+}) {
+  const numeric = Number(value);
+  const sliderValue =
+    value.trim() !== "" && Number.isFinite(numeric)
+      ? Math.min(Math.max(numeric, min), max)
+      : min;
+  const progress =
+    max > min
+      ? Math.min(100, Math.max(0, ((sliderValue - min) / (max - min)) * 100))
+      : 0;
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-2">
+        <label
+          htmlFor={id}
+          className="text-[0.62rem] font-semibold uppercase leading-4 tracking-[0.1em] text-white/55"
+        >
+          {label}
+        </label>
+        <span className="rounded border border-white/[0.07] bg-white/[0.02] px-1.5 py-0.5 text-[0.5rem] font-semibold text-white/38">
+          {currency}
+        </span>
+      </div>
+      {hint && (
+        <p className="mt-0.5 text-[0.58rem] leading-4 text-white/32">{hint}</p>
+      )}
+      <div className="relative mt-2">
+        <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[0.52rem] font-semibold uppercase tracking-[0.06em] text-white/38">
+          {currency}
+        </span>
+        <input
+          id={id}
+          name={id}
+          type="number"
+          min="0"
+          step="any"
+          inputMode="decimal"
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${id}-error` : undefined}
+          placeholder={placeholder}
+          className={cn(
+            "h-11 w-full rounded-xl border bg-[#070A12] ps-12 pe-2.5 text-[0.86rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
+            error ? "border-red-400/40" : "border-white/[0.09]",
+          )}
+        />
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={sliderValue}
+        onChange={(event) => onChange(event.target.value)}
+        aria-label={`${label} slider`}
+        aria-valuetext={formatCurrency(sliderValue, currency, language)}
+        style={{ "--range-progress": `${progress}%` } as React.CSSProperties}
+        className="nara-range mt-3 w-full"
+      />
+      <div className="mt-1 flex items-center justify-between gap-2 text-[0.54rem] tabular-nums text-white/30">
+        <span>{formatCurrency(min, currency, language)}</span>
+        <span>{formatCurrency(max, currency, language)}</span>
+      </div>
+      {error && (
+        <p id={`${id}-error`} className="mt-1.5 text-[0.66rem] leading-4 text-red-300">
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export function RoiCalculator() {
@@ -73,12 +189,21 @@ export function RoiCalculator() {
   const copy = t.roi;
   const roi = content.roi;
   const [currencyCode, setCurrencyCode] = useState<CurrencyCode>("USD");
+  const [revenue, setRevenue] = useState(
+    String(defaultRevenueFor(currencies.USD)),
+  );
   const [budget, setBudget] = useState(String(currencies.USD.defaultBudget));
-  const [itemValue, setItemValue] = useState(String(currencies.USD.defaultItemValue));
-  const [touched, setTouched] = useState<TouchedFields>({ budget: false, itemValue: false });
+  const [ticket, setTicket] = useState(String(currencies.USD.defaultItemValue));
+  const [touched, setTouched] = useState<TouchedFields>({
+    revenue: false,
+    budget: false,
+    ticket: false,
+  });
   const uid = useId().replace(/:/g, "");
   const initialized = useRef(false);
-  const previousConfigs = useRef<Record<CurrencyCode, CurrencyConfig> | null>(null);
+  const previousConfigs = useRef<Record<CurrencyCode, CurrencyConfig> | null>(
+    null,
+  );
 
   const configs = useMemo(() => {
     const next = {} as Record<CurrencyCode, CurrencyConfig>;
@@ -108,8 +233,9 @@ export function RoiCalculator() {
       const detected = detectCurrency();
       const next = configs[detected];
       setCurrencyCode(detected);
+      setRevenue(String(defaultRevenueFor(next)));
       setBudget(String(next.defaultBudget));
-      setItemValue(String(next.defaultItemValue));
+      setTicket(String(next.defaultItemValue));
       return;
     }
 
@@ -120,32 +246,46 @@ export function RoiCalculator() {
     const next = configs[currencyCode];
     const last = previous[currencyCode];
 
+    setRevenue((current) =>
+      current.trim() === String(defaultRevenueFor(last))
+        ? String(defaultRevenueFor(next))
+        : current,
+    );
     setBudget((current) =>
       current.trim() === String(last.defaultBudget)
         ? String(next.defaultBudget)
         : current,
     );
-    setItemValue((current) =>
+    setTicket((current) =>
       current.trim() === String(last.defaultItemValue)
         ? String(next.defaultItemValue)
         : current,
     );
   }, [configs, currencyCode, ready]);
 
+  const revenueNumber = parsePositiveInput(revenue);
   const budgetNumber = parsePositiveInput(budget);
-  const itemValueNumber = parsePositiveInput(itemValue);
+  const ticketNumber = parsePositiveInput(ticket);
+
+  const revenueError =
+    revenue.trim() === ""
+      ? copy.revenueRequired
+      : revenueNumber === null
+        ? copy.revenuePositive
+        : undefined;
   const budgetError =
     budget.trim() === ""
       ? copy.budgetRequired
       : budgetNumber === null
         ? copy.budgetPositive
         : undefined;
-  const itemValueError =
-    itemValue.trim() === ""
+  const ticketError =
+    ticket.trim() === ""
       ? copy.itemRequired
-      : itemValueNumber === null
+      : ticketNumber === null
         ? copy.itemPositive
         : undefined;
+
   const roiMultiplier =
     budgetNumber !== null
       ? getReturnMultiplier(budgetNumber, currencyCode, {
@@ -155,17 +295,58 @@ export function RoiCalculator() {
         })
       : null;
   const projection =
-    budgetNumber !== null && itemValueNumber !== null && roiMultiplier !== null
-      ? buildProjection(budgetNumber, itemValueNumber, roiMultiplier)
+    revenueNumber !== null &&
+    budgetNumber !== null &&
+    ticketNumber !== null &&
+    roiMultiplier !== null
+      ? buildProjection(revenueNumber, budgetNumber, ticketNumber, roiMultiplier)
       : null;
 
+  const showRevenueError = touched.revenue ? revenueError : undefined;
   const showBudgetError = touched.budget ? budgetError : undefined;
-  const showItemValueError = touched.itemValue ? itemValueError : undefined;
+  const showTicketError = touched.ticket ? ticketError : undefined;
   const minLabel = roi.minMultiplier.toFixed(1);
   const maxLabel = roi.maxMultiplier.toFixed(1);
   const rangeLabel = `${minLabel}–${maxLabel}x`;
-  const description = formatMessage(copy.description, { min: minLabel, max: maxLabel });
-  const disclaimer = formatMessage(copy.disclaimer, { min: minLabel, max: maxLabel });
+  const description = formatMessage(copy.description, {
+    min: minLabel,
+    max: maxLabel,
+  });
+  const disclaimer = formatMessage(copy.disclaimer, {
+    min: minLabel,
+    max: maxLabel,
+  });
+
+  const revenueStep = defaultRevenueStep(config);
+  const revenueMax = Math.ceil(
+    (Math.max(revenueStep * 20, (revenueNumber ?? defaultRevenueFor(config)) * 3) +
+      Number.EPSILON) /
+      revenueStep,
+  ) * revenueStep;
+  const budgetMax = Math.ceil(
+    (Math.max(
+      config.budgetStep * 10,
+      (budgetNumber ?? config.defaultBudget) * 4,
+    ) +
+      Number.EPSILON) /
+      config.budgetStep,
+  ) * config.budgetStep;
+  const ticketMax = Math.ceil(
+    (Math.max(
+      config.itemStep * 20,
+      (ticketNumber ?? config.defaultItemValue) * 6,
+    ) +
+      Number.EPSILON) /
+      config.itemStep,
+  ) * config.itemStep;
+
+  const liftLabel =
+    projection !== null
+      ? `+${new Intl.NumberFormat(
+          language === "ar" ? "ar-EG-u-nu-latn" : "en-US",
+          { maximumFractionDigits: 1 },
+        ).format(projection.liftPercent)}%`
+      : "";
 
   const handleCurrencyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const nextCode = event.target.value as CurrencyCode;
@@ -174,24 +355,34 @@ export function RoiCalculator() {
     const previous = configs[currencyCode];
     const next = configs[nextCode];
     const isPristine =
+      revenue.trim() === String(defaultRevenueFor(previous)) &&
       budget.trim() === String(previous.defaultBudget) &&
-      itemValue.trim() === String(previous.defaultItemValue);
+      ticket.trim() === String(previous.defaultItemValue);
 
-    const nextBudget = isPristine
-      ? next.defaultBudget
-      : budgetNumber !== null
-        ? roundToStep((budgetNumber * next.usdRate) / previous.usdRate, next.budgetStep)
-        : next.defaultBudget;
-    const nextItemValue = isPristine
-      ? next.defaultItemValue
-      : itemValueNumber !== null
-        ? roundToStep((itemValueNumber * next.usdRate) / previous.usdRate, next.itemStep)
-        : next.defaultItemValue;
+    const convert = (value: number | null, step: number, fallback: number) =>
+      isPristine
+        ? fallback
+        : value !== null
+          ? roundToStep((value * next.usdRate) / previous.usdRate, step)
+          : fallback;
 
     setCurrencyCode(nextCode);
-    setBudget(String(nextBudget));
-    setItemValue(String(nextItemValue));
-    setTouched({ budget: false, itemValue: false });
+    setRevenue(
+      String(
+        convert(
+          revenueNumber,
+          defaultRevenueStep(next),
+          defaultRevenueFor(next),
+        ),
+      ),
+    );
+    setBudget(
+      String(convert(budgetNumber, next.budgetStep, next.defaultBudget)),
+    );
+    setTicket(
+      String(convert(ticketNumber, next.itemStep, next.defaultItemValue)),
+    );
+    setTouched({ revenue: false, budget: false, ticket: false });
     storeCurrency(nextCode);
   };
 
@@ -311,85 +502,67 @@ export function RoiCalculator() {
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
-                  setTouched({ budget: true, itemValue: true });
+                  setTouched({ revenue: true, budget: true, ticket: true });
                 }}
                 noValidate
                 className="relative px-5 pb-4 pt-5 sm:px-6 sm:pt-6"
               >
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor={`${uid}-budget`}
-                      className="text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/55"
-                    >
-                      {copy.budgetLabel}
-                    </label>
-                    <div className="relative mt-2">
-                      <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[0.52rem] font-semibold uppercase tracking-[0.08em] text-white/38">
-                        {currencyCode}
-                      </span>
-                      <input
-                        id={`${uid}-budget`}
-                        name="budget"
-                        type="number"
-                        min="0"
-                        step="any"
-                        inputMode="decimal"
-                        value={budget}
-                        onChange={(event) => setBudget(event.target.value)}
-                        onBlur={() => setTouched((current) => ({ ...current, budget: true }))}
-                        aria-invalid={Boolean(showBudgetError)}
-                        aria-describedby={showBudgetError ? `${uid}-budget-error` : undefined}
-                        placeholder={String(config.defaultBudget)}
-                        className={cn(
-                          "h-12 w-full rounded-xl border bg-[#070A12] ps-12 pe-3 text-[0.9rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
-                          showBudgetError ? "border-red-400/40" : "border-white/[0.09]",
-                        )}
-                      />
-                    </div>
-                    {showBudgetError && (
-                      <p id={`${uid}-budget-error`} className="mt-1.5 text-[0.68rem] text-red-300">
-                        {showBudgetError}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <label
-                      htmlFor={`${uid}-item-value`}
-                      className="text-[0.66rem] font-semibold uppercase tracking-[0.12em] text-white/55"
-                    >
-                      {copy.itemValueLabel}
-                    </label>
-                    <div className="relative mt-2">
-                      <span className="pointer-events-none absolute start-3 top-1/2 -translate-y-1/2 text-[0.52rem] font-semibold uppercase tracking-[0.08em] text-white/38">
-                        {currencyCode}
-                      </span>
-                      <input
-                        id={`${uid}-item-value`}
-                        name="itemValue"
-                        type="number"
-                        min="0"
-                        step="any"
-                        inputMode="decimal"
-                        value={itemValue}
-                        onChange={(event) => setItemValue(event.target.value)}
-                        onBlur={() => setTouched((current) => ({ ...current, itemValue: true }))}
-                        aria-invalid={Boolean(showItemValueError)}
-                        aria-describedby={showItemValueError ? `${uid}-item-value-error` : undefined}
-                        placeholder={String(config.defaultItemValue)}
-                        className={cn(
-                          "h-12 w-full rounded-xl border bg-[#070A12] ps-12 pe-3 text-[0.9rem] font-medium tabular-nums text-white outline-none transition placeholder:text-white/20 focus:border-electric/50 focus:ring-2 focus:ring-electric/15",
-                          showItemValueError ? "border-red-400/40" : "border-white/[0.09]",
-                        )}
-                      />
-                    </div>
-                    {showItemValueError && (
-                      <p id={`${uid}-item-value-error`} className="mt-1.5 text-[0.68rem] text-red-300">
-                        {showItemValueError}
-                      </p>
-                    )}
-                  </div>
+                <div className="grid gap-5 sm:grid-cols-3 sm:gap-4">
+                  <SliderField
+                    id={`${uid}-revenue`}
+                    label={copy.revenueLabel}
+                    hint={copy.revenueHint}
+                    currency={currencyCode}
+                    language={language}
+                    value={revenue}
+                    placeholder={String(defaultRevenueFor(config))}
+                    error={showRevenueError}
+                    min={revenueStep}
+                    max={revenueMax}
+                    step={revenueStep}
+                    onChange={(value) =>
+                      setRevenue(value.trim() === "" ? "" : value)
+                    }
+                    onBlur={() =>
+                      setTouched((current) => ({ ...current, revenue: true }))
+                    }
+                  />
+                  <SliderField
+                    id={`${uid}-budget`}
+                    label={copy.budgetLabel}
+                    currency={currencyCode}
+                    language={language}
+                    value={budget}
+                    placeholder={String(config.defaultBudget)}
+                    error={showBudgetError}
+                    min={config.budgetStep}
+                    max={budgetMax}
+                    step={config.budgetStep}
+                    onChange={(value) =>
+                      setBudget(value.trim() === "" ? "" : value)
+                    }
+                    onBlur={() =>
+                      setTouched((current) => ({ ...current, budget: true }))
+                    }
+                  />
+                  <SliderField
+                    id={`${uid}-ticket`}
+                    label={copy.itemValueLabel}
+                    currency={currencyCode}
+                    language={language}
+                    value={ticket}
+                    placeholder={String(config.defaultItemValue)}
+                    error={showTicketError}
+                    min={config.itemStep}
+                    max={ticketMax}
+                    step={config.itemStep}
+                    onChange={(value) =>
+                      setTicket(value.trim() === "" ? "" : value)
+                    }
+                    onBlur={() =>
+                      setTouched((current) => ({ ...current, ticket: true }))
+                    }
+                  />
                 </div>
 
                 <div className="mt-4 flex items-center gap-2 text-[0.66rem] leading-5 text-white/42">
@@ -419,43 +592,49 @@ export function RoiCalculator() {
 
                     {projection ? (
                       <div
-                        key={`${currencyCode}-${projection.estimatedRevenue}-${projection.projectedCustomers}-${projection.netReturn}`}
+                        key={`${currencyCode}-${projection.generatedRevenue}-${projection.projectedLeads}-${projection.totalRevenue}`}
                         className="animate-fade-up"
                       >
-                        <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                        <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                           <p className="max-w-full break-words font-display text-[2rem] font-medium leading-none tracking-[-0.045em] tabular-nums text-white sm:text-[2.45rem]">
-                            {formatCurrency(projection.estimatedRevenue, currencyCode, language)}
+                            {formatCurrency(projection.generatedRevenue, currencyCode, language)}
                           </p>
+                          <span className="text-[0.78rem] font-medium text-white/42">
+                            {copy.perMonth}
+                          </span>
                           <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-2 py-1 text-[0.62rem] font-semibold text-emerald-300">
                             <TrendingUp className="h-3 w-3" />
                             {projection.roiMultiplier.toFixed(1)}x {copy.returnSuffix}
                           </span>
                         </div>
+                        <p className="mt-1.5 text-[0.62rem] uppercase tracking-[0.12em] text-white/38">
+                          {copy.generatedLabel}
+                        </p>
 
                         <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-white/[0.07] pt-4">
-                          <div>
-                            <dt className="text-[0.58rem] uppercase tracking-[0.12em] text-white/42">
+                          <div className="min-w-0">
+                            <dt className="text-[0.56rem] uppercase leading-4 tracking-[0.1em] text-white/42">
                               {copy.netRevenue}
                             </dt>
-                            <dd className="mt-1 text-[0.92rem] font-semibold tabular-nums text-white/82">
-                              {formatCurrency(projection.netReturn, currencyCode, language)}
+                            <dd className="mt-1 truncate text-[0.88rem] font-semibold tabular-nums text-white/82">
+                              {formatCurrency(projection.totalRevenue, currencyCode, language)}
                             </dd>
                           </div>
-                          <div>
-                            <dt className="text-[0.58rem] uppercase tracking-[0.12em] text-white/42">
-                              {copy.newCustomers}
+                          <div className="min-w-0">
+                            <dt className="text-[0.56rem] uppercase leading-4 tracking-[0.1em] text-white/42">
+                              {copy.projectedLeads}
                             </dt>
-                            <dd className="mt-1 flex items-center gap-1.5 text-[0.92rem] font-semibold tabular-nums text-white/82">
-                              <Users className="h-3 w-3 text-white/38" />
-                              {formatNumber(projection.projectedCustomers, language)}
+                            <dd className="mt-1 flex items-center gap-1.5 text-[0.88rem] font-semibold tabular-nums text-white/82">
+                              <Users className="h-3 w-3 shrink-0 text-white/38" />
+                              {formatNumber(projection.projectedLeads, language)}
                             </dd>
                           </div>
-                          <div>
-                            <dt className="text-[0.58rem] uppercase tracking-[0.12em] text-white/42">
-                              {copy.returnMultiple}
+                          <div className="min-w-0">
+                            <dt className="text-[0.56rem] uppercase leading-4 tracking-[0.1em] text-white/42">
+                              {copy.liftLabel}
                             </dt>
-                            <dd className="mt-1 text-[0.92rem] font-semibold tabular-nums text-white/82">
-                              {projection.roiMultiplier.toFixed(1)}x
+                            <dd className="mt-1 truncate text-[0.88rem] font-semibold tabular-nums text-emerald-300">
+                              {liftLabel}
                             </dd>
                           </div>
                         </dl>

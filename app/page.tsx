@@ -5,6 +5,7 @@ import { Services } from "@/components/site/services";
 import { Method } from "@/components/site/method";
 import { CaseStudies } from "@/components/site/case-studies";
 import { RoiCalculator } from "@/components/site/roi-calculator";
+import { LeadCapture } from "@/components/site/lead-capture";
 import { Testimonials } from "@/components/site/testimonials";
 import { Insights } from "@/components/site/insights";
 import { Contact } from "@/components/site/contact";
@@ -22,6 +23,7 @@ export default function HomePage() {
         <Method />
         <CaseStudies />
         <RoiCalculator />
+        <LeadCapture />
         <Testimonials />
         <Insights />
         <Contact />

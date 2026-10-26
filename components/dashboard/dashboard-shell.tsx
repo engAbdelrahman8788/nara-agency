@@ -13,12 +13,14 @@ import {
   LayoutTemplate,
   LifeBuoy,
   LogOut,
+  Megaphone,
   Menu,
   MessageSquare,
   PanelLeftClose,
   Plus,
   Settings,
   ShieldCheck,
+  UserPlus,
   Users,
   X,
 } from "lucide-react";
@@ -43,8 +45,11 @@ import { ClientSupport } from "@/components/dashboard/client-support";
 import { AdminCommand } from "@/components/dashboard/admin-command";
 import { AdminClients } from "@/components/dashboard/admin-clients";
 import { AdminContent } from "@/components/dashboard/admin-content";
+import { AdminLeads } from "@/components/dashboard/admin-leads";
+import { AdminAdGenerator } from "@/components/dashboard/admin-ad-generator";
 import { AdminReports } from "@/components/dashboard/admin-reports";
 import { AdminTickets } from "@/components/dashboard/admin-tickets";
+import { useLeads } from "@/lib/leads/provider";
 
 type NavItem = {
   id: string;
@@ -62,7 +67,9 @@ const clientNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { id: "command", label: "Command center", icon: Command, description: "Agency performance" },
+  { id: "leads", label: "Leads / CRM", icon: UserPlus, description: "Website enquiries and pipeline" },
   { id: "content", label: "Content studio", icon: LayoutTemplate, description: "Edit the public website" },
+  { id: "ads", label: "Ad generator", icon: Megaphone, description: "Hooks, ad copy and outreach" },
   { id: "clients", label: "Clients", icon: Users, description: "Portfolio management" },
   { id: "reports", label: "Report uploader", icon: FileText, description: "Publish client reports" },
   { id: "tickets", label: "Ticket desk", icon: Headphones, description: "Client support inbox" },
@@ -94,6 +101,7 @@ function Sidebar({
   onNavigate,
   onSignOut,
   ticketCount,
+  newLeadCount,
   onClose,
 }: {
   role: DashboardRole;
@@ -102,6 +110,7 @@ function Sidebar({
   onNavigate: (view: string) => void;
   onSignOut: () => void;
   ticketCount: number;
+  newLeadCount: number;
   onClose?: () => void;
 }) {
   const nav = role === "client" ? clientNav : adminNav;
@@ -153,6 +162,12 @@ function Sidebar({
           <nav aria-label={`${role} dashboard navigation`} className="mt-2 space-y-0.5">
             {nav.map((item) => {
               const active = activeView === item.id;
+              const badgeCount =
+                item.id === "leads"
+                  ? newLeadCount
+                  : item.id === "support" || item.id === "tickets"
+                    ? ticketCount
+                    : 0;
               return (
                 <button
                   key={item.id}
@@ -170,12 +185,17 @@ function Sidebar({
                   {active && <span className="absolute inset-y-2 left-0 w-0.5 rounded-full bg-electric-soft shadow-[0_0_8px_rgba(91,140,255,0.7)]" />}
                   <item.icon className={cn("h-[1.05rem] w-[1.05rem] shrink-0 transition-colors", active ? "text-electric-soft" : "text-white/48 group-hover:text-white/62")} strokeWidth={1.7} />
                   <span className="flex-1 text-[0.8rem] font-medium">{item.label}</span>
-                  {item.id === "support" || item.id === "tickets" ? (
-                    ticketCount > 0 ? (
-                      <span className="flex h-4 min-w-4 items-center justify-center rounded-full border border-white/[0.08] bg-white/[0.05] px-1 text-[0.6rem] font-semibold text-white/55">
-                        {ticketCount}
-                      </span>
-                    ) : null
+                  {badgeCount > 0 ? (
+                    <span
+                      className={cn(
+                        "flex h-4 min-w-4 items-center justify-center rounded-full border px-1 text-[0.6rem] font-semibold",
+                        item.id === "leads"
+                          ? "border-amber-400/20 bg-amber-400/[0.09] text-amber-300"
+                          : "border-white/[0.08] bg-white/[0.05] text-white/55",
+                      )}
+                    >
+                      {badgeCount}
+                    </span>
                   ) : null}
                 </button>
               );
@@ -270,6 +290,8 @@ export function DashboardShell({
     seedReports.map((report) => ({ ...report, client: "AUREL" })),
   );
   const ticketCounter = useRef(2419);
+  const { leads } = useLeads();
+  const newLeadCount = leads.filter((lead) => lead.status === "New").length;
 
   const nav = role === "client" ? clientNav : adminNav;
   const activeNav = nav.find((item) => item.id === activeView) ?? nav[0];
@@ -472,8 +494,12 @@ export function DashboardShell({
     }
 
     switch (activeView) {
+      case "leads":
+        return <AdminLeads />;
       case "content":
         return <AdminContent />;
+      case "ads":
+        return <AdminAdGenerator />;
       case "clients":
         return <AdminClients clients={clients} onAddClient={addClient} onUpdateClient={updateClient} onDeleteClient={deleteClient} />;
       case "reports":
@@ -508,6 +534,7 @@ export function DashboardShell({
             onNavigate={navigate}
             onSignOut={signOut}
             ticketCount={role === "client" ? aurelTickets : unresolvedTickets}
+            newLeadCount={role === "client" ? 0 : newLeadCount}
           />
         </aside>
 
@@ -527,6 +554,7 @@ export function DashboardShell({
                 onNavigate={navigate}
                 onSignOut={signOut}
                 ticketCount={role === "client" ? aurelTickets : unresolvedTickets}
+                newLeadCount={role === "client" ? 0 : newLeadCount}
                 onClose={() => setSidebarOpen(false)}
               />
             </div>

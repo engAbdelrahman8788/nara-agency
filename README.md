@@ -66,7 +66,7 @@ npm run build       # optimized production build, including type validation
 
 | Route | Purpose |
 | --- | --- |
-| `/` | Homepage: hero, metrics ticker, services, method, selected work, ROI calculator, testimonials, insights, contact |
+| `/` | Homepage: hero, metrics ticker, services, method, selected work, ROI calculator, lead capture, testimonials, insights, contact |
 | `/insights` | Editorial index |
 | `/insights/paid-media-playbook` | Long-form article |
 | `/insights/roas` | Long-form article |
@@ -76,7 +76,7 @@ npm run build       # optimized production build, including type validation
 | `/login` | Private workspace sign-in |
 | `/dashboard` | Session-scoped client or agency workspace; redirects to `/login` when unauthenticated |
 
-This app supports one client role and one agency / owner role, each tied to its own account. The dashboard does not accept a role query parameter, does not expose a role switcher, and is not linked from the public header, footer, landing page, or 404 page. Agency accounts also receive a **Content studio** area for editing public-site content; client accounts never render that navigation or view.
+This app supports one client role and one agency / owner role, each tied to its own account. The dashboard does not accept a role query parameter, does not expose a role switcher, and is not linked from the public header, footer, landing page, or 404 page. Agency accounts also receive a **Content studio** area for editing public-site content plus **Leads / CRM** and **Ad generator** tools; client accounts never render that navigation or those views.
 
 ## Authentication and workspace security
 
@@ -98,15 +98,25 @@ Agency accounts can edit the public marketing site from **Dashboard → Content 
 | **Hero** | English and Arabic title lines, accent phrase, ending, subtitle, validated save, and a two-language live preview |
 | **Services** | Add, edit, hide/show, reorder, and delete services; bilingual eyebrows, titles, descriptions, metrics, tags, deliverables, icon, and accent color |
 | **Testimonials** | Add, edit, hide/show, reorder, and delete reviews; bilingual client name, role, company, quote, result metric, 1–5 star rating, initials, and avatar accent |
-| **ROI model** | Base and maximum return multipliers, curve budget, plus default budget and customer value for each supported currency |
+| **Case studies** | Add, edit, hide/show, reorder, and delete portfolio stories; bilingual title, niche, growth metric, description, brand, services, stats, before/after values, challenge, approach, result, quote, category, and cover artwork |
+| **ROI model** | Base and maximum return multipliers, curve budget, plus default monthly budget and average ticket size for each supported currency |
 
 ### Persistence and publishing
 
 - Content lives in browser `localStorage` under `nara-cms-content-v1`. `CmsProvider` loads it at startup, sanitizes every stored or imported value, and notifies every open tab through the `storage` event.
-- Public components read the same localized content, so a saved edit appears immediately on `/` in that browser — including the hero, services grid, testimonial cards and average rating, and ROI calculator defaults/range copy.
-- The store is **browser-local**, not a shared database. Another visitor or device sees the built-in defaults until the content is imported there. Use **Export** to download a JSON snapshot and **Import** to apply it in another browser. **Reset** restores the seeded hero, services, testimonials, and ROI model.
+- Public components read the same localized content, so a saved edit appears immediately on `/` in that browser — including the hero, services grid, testimonial cards and average rating, case-study portfolio and detail modals, and ROI calculator defaults/range copy.
+- The store is **browser-local**, not a shared database. Another visitor or device sees the built-in defaults until the content is imported there. Use **Export** to download a JSON snapshot and **Import** to apply it in another browser. **Reset** restores the seeded hero, services, testimonials, case studies, and ROI model.
 - For multi-editor or all-visitor publishing, replace the persistence layer in `lib/cms/provider.tsx` with a durable shared store (for example a database or edge KV) and keep the sanitizer in `lib/cms/content.ts` for validation.
 - Seed content is derived from the existing English and Arabic translations, so the site still renders fully with no stored content and no JavaScript errors from missing fields.
+
+## Leads CRM and ad studio
+
+Agency accounts also have two browser-local growth tools in the dashboard:
+
+- **Leads / CRM** collects every landing-page enquiry (name, phone, business type / showroom, and message) under `nara-leads-v1` through `LeadsProvider`. The pipeline supports **New → Contacted → Won** status changes, search, status filters, a detail view, one-click call and WhatsApp links, deletion with confirmation, and CSV export. Five representative leads are seeded on a clean browser so the pipeline can be evaluated immediately.
+- **Ad generator** turns a business type into niche-aware hooks, three primary ad concepts, and three B2B outreach angles. It runs entirely from versioned templates in `lib/ad-generator.ts` — no API key, network request, or per-generation cost — and each block can be copied or regenerated for a fresh rotation.
+
+Both tools are **browser-local**. A website submission is visible in the agency CRM on the same browser profile, and lead statuses persist between visits there. Use a shared database or CRM integration to collect submissions from every visitor and device.
 
 ## Currency and ROI model
 
@@ -114,11 +124,12 @@ The public ROI calculator adapts to the visitor's market and keeps projections g
 
 - **Supported currencies:** EGP (Egypt), SAR (Saudi Arabia), AED (United Arab Emirates), and USD (fallback).
 - **Detection order:** saved `nara-currency` preference → IANA timezone → browser locale region → USD.
-- **Local benchmarks:** each currency has its own default 90-day media budget and average customer value, rather than using a raw currency conversion of a US default. These presets are editable in the Content studio.
+- **Local benchmarks:** each currency has its own default monthly media budget and average ticket size, rather than using a raw currency conversion of a US default. These presets are editable in the Content studio.
 - **Manual selection:** changing the currency stores the preference for future visits. Edited values are converted once using approximate FX rates and rounded to a market-friendly step; pristine values switch to the selected market's local benchmark.
-- **Realistic returns:** the modeled return multiple starts at a configurable base (**3.2x** by default) and approaches a configurable maximum (**4.8x** by default). It rises with the USD-equivalent 90-day budget using `min + (max − min) × (1 − e^(−budgetUSD / curve))`, rounded to one decimal. All three values are editable in the Content studio.
-- **Projection:** revenue = budget × modeled multiple; net return = revenue − budget; projected customers = floor(revenue ÷ customer value).
-- **Formatting:** results use locale-aware formatting and Latin digits in Arabic (`ar-EG-u-nu-latn`). Inputs are validated inline, and positive validation messages are preserved.
+- **Realistic returns:** the modeled return multiple starts at a configurable base (**3.2x** by default) and approaches a configurable maximum (**4.8x** by default). It rises with the USD-equivalent monthly budget using `min + (max − min) × (1 − e^(−budgetUSD / curve))`, rounded to one decimal. All three values are editable in the Content studio.
+- **Inputs:** current monthly revenue, monthly ad budget, and average ticket size. Each has a synchronized number field and slider, so the projection updates as either control moves.
+- **Projection:** generated revenue = monthly budget × modeled multiple; total revenue after NARA = current monthly revenue + generated revenue; projected leads = generated revenue ÷ average ticket size; revenue lift = generated revenue ÷ current monthly revenue.
+- **Formatting:** results use locale-aware formatting and Latin digits in Arabic (`ar-EG-u-nu-latn`). Inputs are validated inline and the projection is recalculated entirely in the browser.
 - **Fixed inputs:** FX conversion rates and market-friendly input steps remain code-level constants; the studio edits the model and presets, not live exchange rates.
 
 ## What's included
@@ -129,11 +140,11 @@ The public ROI calculator adapts to the visitor's market and keeps projections g
 - Content-managed bilingual hero and testimonial rating strip
 - Editable service cards with detail modals, ordering, visibility, and an empty state
 - Methodology timeline with a senior-pod visual
-- Filterable case studies with bespoke CSS/SVG cover art and full-story modals
-- Currency-aware ROI calculator with market detection and realistic 3.2x–4.8x projections
+- CMS-driven, filterable case studies with bespoke CSS/SVG cover art, dynamic categories, and full-story modals
+- Currency-aware monthly ROI calculator with three synchronized inputs, market detection, and realistic 3.2x–4.8x projections
 - Arab client testimonials with representative portraits, bilingual profile context, and natural Arabic review copy
 - Editorial insights and newsletter capture
-- Validated lead form with success state, calendar booking, and WhatsApp links
+- Validated lead-capture form that writes directly into the agency CRM, with success state, calendar booking, and WhatsApp links
 - Branded 404 and error boundaries
 - Structured data, Open Graph metadata, `sitemap.xml`, and `robots.txt`
 
@@ -146,7 +157,9 @@ The public ROI calculator adapts to the visitor's market and keeps projections g
 
 ### Agency workspace
 - Agency command center with revenue, retainers, client health, portfolio table, support queue, team utilization, and activity feed
-- Content studio for live hero, services, testimonials, and ROI editing with bilingual previews, import/export, and reset
+- Content studio for live hero, services, testimonials, case studies, and monthly ROI editing with bilingual previews, import/export, and reset
+- Leads / CRM with landing-page capture, New/Contacted/Won pipeline, search, status filters, call and WhatsApp actions, deletion, and CSV export
+- Ad generator with niche-aware hooks, primary ad copy, B2B outreach angles, per-block copy, and regeneration
 - Client CRUD with account managers, budgets, statuses, and confirmation before deletion
 - Report uploader with client selection, type, period, notify option, and recent uploads
 - Ticket desk with filters, priority sort, search, status toggles, quick replies, and conversation history
@@ -200,6 +213,8 @@ lib/
   auth/session.ts          Signed session creation and verification
   cms/content.ts           Content types, seed defaults, sanitizer, localized resolvers
   cms/provider.tsx         Browser persistence, cross-tab sync, import/export/reset
+  leads/provider.tsx       Browser-local lead pipeline, validation, persistence
+  ad-generator.ts          Niche-aware hooks, ad copy, and B2B outreach templates
   currency.ts              Currency detection, defaults, formatting, ROI model
   data.ts                  Mock marketing and dashboard data
   insights-content.ts      Structured article content
@@ -214,9 +229,9 @@ public/testimonials/       Representative Arab portrait photography
 
 - **Modals** use a portal, focus trap, Escape handling, scroll lock, and stable focus restoration. The focus effect intentionally depends only on `open` so typing in a form never pulls focus out of the active field.
 - **Charts** are hand-built SVG/CSS, keeping the experience fast and dependency-light.
-- **ROI calculator:** projections are calculated entirely in the browser from the selected currency, 90-day budget, and customer value. The model is intentionally bounded at 3.2x–4.8x instead of inflating small budgets into multi-million headline numbers.
+- **ROI calculator:** projections are calculated entirely in the browser from the selected currency, monthly budget, current monthly revenue, and average ticket size. The model is intentionally bounded at 3.2x–4.8x instead of inflating small budgets into multi-million headline numbers.
 - **Downloads** are generated client-side: CSV exports use a UTF-8 BOM for Excel compatibility, and reports use a minimal, valid single-page PDF.
-- **State sharing:** the client and admin views are rendered by the same `DashboardShell`, so a ticket created as a client is immediately visible in the agency ticket desk during that browser session. There is no backend database.
+- **State sharing:** the client and admin views are rendered by the same `DashboardShell`, so a ticket created as a client is immediately visible in the agency ticket desk during that browser session. Leads use the same browser-local pattern, so landing-page submissions appear in the CRM on that profile. There is no backend database.
 - **CMS content:** `CmsProvider` wraps the entire app in `app/layout.tsx`. Every read parses and sanitizes the stored payload, malformed data falls back to seed content instead of crashing, and editors key drafts to their own section so unrelated saves do not discard unsaved work. Content export/import is the supported handoff between browsers because the store is local to one origin and profile.
 - **Accessibility:** semantic landmarks, skip link, visible focus states, labelled dialogs, labelled form fields, `aria-current` navigation, keyboard-operable controls, and reduced-motion support are included.
 

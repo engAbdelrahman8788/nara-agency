@@ -18,6 +18,14 @@ export type Service = {
   accent: string;
 };
 
+export type CaseStudyVisual =
+  | "beauty"
+  | "saas"
+  | "wellness"
+  | "b2b"
+  | "home"
+  | "fashion";
+
 export type CaseStudy = {
   id: string;
   brand: string;
@@ -40,7 +48,7 @@ export type CaseStudy = {
   result: string;
   quote: string;
   author: string;
-  visual: "beauty" | "saas" | "wellness" | "b2b" | "home" | "fashion";
+  visual: CaseStudyVisual;
 };
 
 export type Testimonial = {

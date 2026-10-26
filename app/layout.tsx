@@ -5,6 +5,7 @@ import "@fontsource-variable/noto-sans-arabic";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n/language-provider";
 import { CmsProvider } from "@/lib/cms/provider";
+import { LeadsProvider } from "@/lib/leads/provider";
 import { SkipLink } from "@/components/ui/skip-link";
 
 export const metadata: Metadata = {
@@ -117,8 +118,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen bg-canvas font-sans text-white antialiased">
         <LanguageProvider>
           <CmsProvider>
-            <SkipLink />
-            {children}
+            <LeadsProvider>
+              <SkipLink />
+              {children}
+            </LeadsProvider>
           </CmsProvider>
         </LanguageProvider>
       </body>
