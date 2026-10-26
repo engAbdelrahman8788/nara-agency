@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -12,6 +12,9 @@ import {
   Search,
   Target,
 } from "lucide-react";
+import type { ServiceIcon } from "@/lib/data";
+import { getLocalizedServices } from "@/lib/cms/content";
+import { useCms } from "@/lib/cms/provider";
 import { cn } from "@/lib/utils";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/ui/reveal";
@@ -20,16 +23,16 @@ import { buttonStyles } from "@/components/ui/button";
 import { useLanguage } from "@/lib/i18n/language-provider";
 import { formatMessage } from "@/lib/i18n/translations";
 
-const iconMap: Record<string, typeof Target> = {
-  media: Target,
+const iconMap: Record<ServiceIcon, typeof Target> = {
+  performance: Target,
   social: MessagesSquare,
-  seo: Search,
+  search: Search,
   content: Clapperboard,
   web: LayoutTemplate,
 };
 
-const accentStyles: Record<string, { icon: string; wash: string; line: string }> = {
-  media: {
+const accentStyles: Record<ServiceIcon, { icon: string; wash: string; line: string }> = {
+  performance: {
     icon: "bg-electric/15 text-electric-soft border-electric/25",
     wash: "from-electric/[0.16] via-transparent to-transparent",
     line: "from-electric to-electric-soft",
@@ -39,7 +42,7 @@ const accentStyles: Record<string, { icon: string; wash: string; line: string }>
     wash: "from-[#5B8CFF]/12 via-transparent to-transparent",
     line: "from-[#5B8CFF] to-[#9DB7FF]",
   },
-  seo: {
+  search: {
     icon: "bg-[#00C2FF]/10 text-[#56D9FF] border-[#00C2FF]/20",
     wash: "from-[#00C2FF]/10 via-transparent to-transparent",
     line: "from-[#00C2FF] to-[#6BE6FF]",
@@ -56,11 +59,11 @@ const accentStyles: Record<string, { icon: string; wash: string; line: string }>
   },
 };
 
-function ServiceVisual({ id }: { id: string }) {
+function ServiceVisual({ icon }: { icon: ServiceIcon }) {
   const { t } = useLanguage();
   const visual = t.services.visual;
 
-  if (id === "media") {
+  if (icon === "performance") {
     return (
       <div className="mt-6 grid grid-cols-3 gap-2.5">
         {[
@@ -82,7 +85,7 @@ function ServiceVisual({ id }: { id: string }) {
     );
   }
 
-  if (id === "social") {
+  if (icon === "social") {
     return (
       <div className="mt-6 flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/15 p-3.5">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#5B8CFF]/12 text-[#96B1FF]">
@@ -107,7 +110,7 @@ function ServiceVisual({ id }: { id: string }) {
     );
   }
 
-  if (id === "seo") {
+  if (icon === "search") {
     return (
       <div className="mt-6 space-y-2">
         {[
@@ -129,7 +132,7 @@ function ServiceVisual({ id }: { id: string }) {
     );
   }
 
-  if (id === "content") {
+  if (icon === "content") {
     return (
       <div className="mt-6 flex gap-2.5">
         {[
@@ -178,9 +181,14 @@ function ServiceVisual({ id }: { id: string }) {
 }
 
 export function Services() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { content } = useCms();
+  const services = useMemo(
+    () => getLocalizedServices(content, language),
+    [content, language],
+  );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const selected = t.services.items.find((service) => service.id === selectedId) ?? null;
+  const selected = services.find((service) => service.id === selectedId) ?? null;
 
   const handleMove = (event: React.MouseEvent<HTMLButtonElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -217,81 +225,113 @@ export function Services() {
           />
         </Reveal>
 
-        <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
-          {t.services.items.map((service, index) => {
-            const Icon = iconMap[service.id] ?? Target;
-            const accent = accentStyles[service.id] ?? accentStyles.media;
-            const span = index === 0 ? "lg:col-span-7" : index === 1 ? "lg:col-span-5" : "lg:col-span-4";
+        {services.length === 0 ? (
+          <Reveal>
+            <div className="mt-14 flex flex-col items-center justify-center rounded-2xl border border-white/[0.08] bg-surface px-6 py-16 text-center">
+              <span className="flex h-11 w-11 items-center justify-center rounded-full border border-electric/20 bg-electric/[0.08] text-electric-soft">
+                <LayoutTemplate className="h-5 w-5" />
+              </span>
+              <p className="mt-4 max-w-md font-display text-xl font-medium tracking-tight text-white">
+                {t.services.empty}
+              </p>
+              <a
+                href="#contact"
+                className={buttonStyles({ variant: "secondary", size: "sm", className: "mt-6" })}
+              >
+                {t.services.action}
+                <ArrowUpRight className="h-3.5 w-3.5" />
+              </a>
+            </div>
+          </Reveal>
+        ) : (
+          <div className="mt-14 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-12">
+            {services.map((service, index) => {
+              const Icon = iconMap[service.icon] ?? Target;
+              const accent = accentStyles[service.icon] ?? accentStyles.performance;
+              const span =
+                services.length === 1
+                  ? "lg:col-span-12"
+                  : index === 0
+                    ? "lg:col-span-7"
+                    : index === 1
+                      ? "lg:col-span-5"
+                      : "lg:col-span-4";
 
-            return (
-              <Reveal key={service.id} delay={(index % 3) as 0 | 1 | 2} className={span}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(service.id)}
-                  onMouseMove={handleMove}
-                  aria-label={formatMessage(t.services.exploreAria, { title: service.title })}
-                  className={cn(
-                    "group relative flex h-full min-h-[20rem] w-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-surface p-6 text-start card-interactive sm:p-7",
-                    index === 0 && "lg:min-h-[25rem]",
-                  )}
-                >
-                  <div className="mouse-glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-br opacity-60", accent.wash)} />
-                  <div className="pointer-events-none absolute inset-0 bg-grid-fine opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent_75%)]" />
+              return (
+                <Reveal key={service.id} delay={(index % 3) as 0 | 1 | 2} className={span}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(service.id)}
+                    onMouseMove={handleMove}
+                    aria-label={formatMessage(t.services.exploreAria, { title: service.title })}
+                    className={cn(
+                      "group relative flex h-full min-h-[20rem] w-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-surface p-6 text-start card-interactive sm:p-7",
+                      index === 0 && "lg:min-h-[25rem]",
+                    )}
+                  >
+                    <div className="mouse-glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-br opacity-60", accent.wash)} />
+                    <div className="pointer-events-none absolute inset-0 bg-grid-fine opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent_75%)]" />
 
-                  <div className="relative flex items-start justify-between">
-                    <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white/42">
-                      {service.eyebrow}
-                    </span>
-                    <span
-                      className={cn(
-                        "flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-500 group-hover:scale-105 group-hover:bg-white/[0.07]",
-                        accent.icon,
-                      )}
-                    >
-                      <Icon className="h-[1.15rem] w-[1.15rem]" strokeWidth={1.55} />
-                    </span>
-                  </div>
-
-                  <div className="relative mt-8">
-                    <h3 className="max-w-sm font-display text-[1.38rem] font-medium leading-snug tracking-[-0.02em] text-white sm:text-[1.5rem]">
-                      {service.title}
-                    </h3>
-                    <p className="mt-3 max-w-md text-[0.8rem] leading-[1.75] text-white/55">{service.description}</p>
-                  </div>
-
-                  <ServiceVisual id={service.id} />
-
-                  <div className="relative mt-auto flex items-end justify-between gap-4 pt-7">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {service.tags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-md border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[0.57rem] font-medium text-white/48"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                    <div className="flex shrink-0 items-end gap-3">
-                      <div className="text-end">
-                        <span className="font-display text-xl font-medium tracking-tight text-white sm:text-[1.65rem]">
-                          {service.metric}
-                        </span>
-                        <p className="mt-0.5 whitespace-nowrap text-[0.53rem] uppercase tracking-[0.12em] text-white/42">
-                          {service.metricLabel}
-                        </p>
-                      </div>
-                      <span className="mb-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/55 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-white/25 group-hover:text-white rtl:group-hover:-translate-x-0.5">
-                        <ArrowUpRight className="h-3 w-3" />
+                    <div className="relative flex items-start justify-between">
+                      <span className="text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-white/42">
+                        {service.eyebrow}
+                      </span>
+                      <span
+                        className={cn(
+                          "flex h-10 w-10 items-center justify-center rounded-lg border transition-all duration-500 group-hover:scale-105 group-hover:bg-white/[0.07]",
+                          accent.icon,
+                        )}
+                        style={{
+                          color: service.accent,
+                          borderColor: `${service.accent}40`,
+                          backgroundColor: `${service.accent}14`,
+                        }}
+                      >
+                        <Icon className="h-[1.15rem] w-[1.15rem]" strokeWidth={1.55} />
                       </span>
                     </div>
-                  </div>
-                </button>
-              </Reveal>
-            );
-          })}
-        </div>
+
+                    <div className="relative mt-8">
+                      <h3 className="max-w-sm font-display text-[1.38rem] font-medium leading-snug tracking-[-0.02em] text-white sm:text-[1.5rem]">
+                        {service.title}
+                      </h3>
+                      <p className="mt-3 max-w-md text-[0.8rem] leading-[1.75] text-white/55">{service.description}</p>
+                    </div>
+
+                    <ServiceVisual icon={service.icon} />
+
+                    <div className="relative mt-auto flex items-end justify-between gap-4 pt-7">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {service.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-md border border-white/[0.07] bg-white/[0.025] px-2 py-1 text-[0.57rem] font-medium text-white/48"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex shrink-0 items-end gap-3">
+                        <div className="text-end">
+                          <span className="font-display text-xl font-medium tracking-tight text-white sm:text-[1.65rem]">
+                            {service.metric}
+                          </span>
+                          <p className="mt-0.5 whitespace-nowrap text-[0.53rem] uppercase tracking-[0.12em] text-white/42">
+                            {service.metricLabel}
+                          </p>
+                        </div>
+                        <span className="mb-0.5 flex h-7 w-7 items-center justify-center rounded-full border border-white/10 text-white/55 transition-all duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:border-white/25 group-hover:text-white rtl:group-hover:-translate-x-0.5">
+                          <ArrowUpRight className="h-3 w-3" />
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                </Reveal>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <Modal open={Boolean(selected)} onClose={() => setSelectedId(null)} labelledBy="service-modal-title" size="lg">

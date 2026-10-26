@@ -10,6 +10,7 @@ import {
   Gauge,
   Headphones,
   LayoutDashboard,
+  LayoutTemplate,
   LifeBuoy,
   LogOut,
   Menu,
@@ -41,6 +42,7 @@ import { ClientReports } from "@/components/dashboard/client-reports";
 import { ClientSupport } from "@/components/dashboard/client-support";
 import { AdminCommand } from "@/components/dashboard/admin-command";
 import { AdminClients } from "@/components/dashboard/admin-clients";
+import { AdminContent } from "@/components/dashboard/admin-content";
 import { AdminReports } from "@/components/dashboard/admin-reports";
 import { AdminTickets } from "@/components/dashboard/admin-tickets";
 
@@ -60,6 +62,7 @@ const clientNav: NavItem[] = [
 
 const adminNav: NavItem[] = [
   { id: "command", label: "Command center", icon: Command, description: "Agency performance" },
+  { id: "content", label: "Content studio", icon: LayoutTemplate, description: "Edit the public website" },
   { id: "clients", label: "Clients", icon: Users, description: "Portfolio management" },
   { id: "reports", label: "Report uploader", icon: FileText, description: "Publish client reports" },
   { id: "tickets", label: "Ticket desk", icon: Headphones, description: "Client support inbox" },
@@ -469,6 +472,8 @@ export function DashboardShell({
     }
 
     switch (activeView) {
+      case "content":
+        return <AdminContent />;
       case "clients":
         return <AdminClients clients={clients} onAddClient={addClient} onUpdateClient={updateClient} onDeleteClient={deleteClient} />;
       case "reports":

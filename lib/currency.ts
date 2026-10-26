@@ -142,10 +142,37 @@ export function roundToStep(value: number, step: number): number {
   return Math.max(step, Math.round(value / step) * step);
 }
 
-export function getReturnMultiplier(budget: number, currency: CurrencyCode): number {
+export type ReturnModel = {
+  min: number;
+  max: number;
+  curveBudgetUsd: number;
+};
+
+export const defaultReturnModel: ReturnModel = {
+  min: 3.2,
+  max: 4.8,
+  curveBudgetUsd: 60_000,
+};
+
+export function getReturnMultiplier(
+  budget: number,
+  currency: CurrencyCode,
+  model: ReturnModel = defaultReturnModel,
+): number {
+  const min =
+    Number.isFinite(model.min) && model.min > 0 ? model.min : defaultReturnModel.min;
+  const max =
+    Number.isFinite(model.max) && model.max > min
+      ? model.max
+      : Math.max(min + 0.1, defaultReturnModel.max);
+  const curve =
+    Number.isFinite(model.curveBudgetUsd) && model.curveBudgetUsd > 0
+      ? model.curveBudgetUsd
+      : defaultReturnModel.curveBudgetUsd;
+
   const budgetInUsd = budget / currencies[currency].usdRate;
-  const modeled = 3.2 + 1.6 * (1 - Math.exp(-Math.max(0, budgetInUsd) / 60_000));
-  return Math.min(4.8, Math.max(3.2, Math.round(modeled * 10) / 10));
+  const modeled = min + (max - min) * (1 - Math.exp(-Math.max(0, budgetInUsd) / curve));
+  return Math.min(max, Math.max(min, Math.round(modeled * 10) / 10));
 }
 
 export function formatCurrency(

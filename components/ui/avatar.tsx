@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/lib/i18n/language-provider";
@@ -11,8 +12,26 @@ type AvatarProps = {
   imageSrc?: string;
   className?: string;
   accent?: string;
+  accentHex?: string;
   size?: "xs" | "sm" | "md" | "lg";
 };
+
+function hexGradient(hex: string | undefined): CSSProperties | undefined {
+  if (!hex) return undefined;
+
+  const match = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!match) return undefined;
+
+  const value = Number.parseInt(match[1], 16);
+  const red = (value >> 16) & 255;
+  const green = (value >> 8) & 255;
+  const blue = value & 255;
+  const shade = (channel: number) => Math.round(channel * 0.45);
+
+  return {
+    backgroundImage: `linear-gradient(135deg, ${hex} 0%, rgb(${shade(red)}, ${shade(green)}, ${shade(blue)}) 100%)`,
+  };
+}
 
 const sizes = {
   xs: "h-6 w-6 text-[0.55rem]",
@@ -27,12 +46,14 @@ export function Avatar({
   imageSrc,
   className,
   accent = "from-[#2563EB] to-[#072465]",
+  accentHex,
   size = "md",
 }: AvatarProps) {
   return (
     <span
       role={name ? "img" : undefined}
       aria-label={name}
+      style={hexGradient(accentHex)}
       className={cn(
         "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br font-semibold tracking-[0.06em] text-white ring-1 ring-inset ring-white/15",
         sizes[size],

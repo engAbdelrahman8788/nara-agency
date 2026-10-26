@@ -4,6 +4,7 @@ import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/noto-sans-arabic";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/i18n/language-provider";
+import { CmsProvider } from "@/lib/cms/provider";
 import { SkipLink } from "@/components/ui/skip-link";
 
 export const metadata: Metadata = {
@@ -60,8 +61,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-canvas font-sans text-white antialiased">
         <LanguageProvider>
-          <SkipLink />
-          {children}
+          <CmsProvider>
+            <SkipLink />
+            {children}
+          </CmsProvider>
         </LanguageProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
@@ -14,7 +14,9 @@ import {
 import { SectionLabel } from "@/components/ui/section-label";
 import { Reveal } from "@/components/ui/reveal";
 import { buttonStyles } from "@/components/ui/button";
+import { useCms } from "@/lib/cms/provider";
 import { useLanguage } from "@/lib/i18n/language-provider";
+import { formatMessage } from "@/lib/i18n/translations";
 import {
   currencies,
   currencyOrder,
@@ -25,6 +27,7 @@ import {
   roundToStep,
   storeCurrency,
   type CurrencyCode,
+  type CurrencyConfig,
 } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 
@@ -66,22 +69,68 @@ function buildProjection(
 
 export function RoiCalculator() {
   const { language, t } = useLanguage();
+  const { content, ready } = useCms();
   const copy = t.roi;
+  const roi = content.roi;
   const [currencyCode, setCurrencyCode] = useState<CurrencyCode>("USD");
   const [budget, setBudget] = useState(String(currencies.USD.defaultBudget));
   const [itemValue, setItemValue] = useState(String(currencies.USD.defaultItemValue));
   const [touched, setTouched] = useState<TouchedFields>({ budget: false, itemValue: false });
   const uid = useId().replace(/:/g, "");
+  const initialized = useRef(false);
+  const previousConfigs = useRef<Record<CurrencyCode, CurrencyConfig> | null>(null);
 
-  const config = currencies[currencyCode];
+  const configs = useMemo(() => {
+    const next = {} as Record<CurrencyCode, CurrencyConfig>;
+
+    for (const code of currencyOrder) {
+      next[code] = {
+        ...currencies[code],
+        defaultBudget:
+          roi.presets[code]?.defaultBudget ?? currencies[code].defaultBudget,
+        defaultItemValue:
+          roi.presets[code]?.defaultItemValue ?? currencies[code].defaultItemValue,
+      };
+    }
+
+    return next;
+  }, [roi.presets]);
+
+  const config = configs[currencyCode];
 
   useEffect(() => {
-    const detected = detectCurrency();
-    const next = currencies[detected];
-    setCurrencyCode(detected);
-    setBudget(String(next.defaultBudget));
-    setItemValue(String(next.defaultItemValue));
-  }, []);
+    if (!ready) return;
+
+    if (!initialized.current) {
+      initialized.current = true;
+      previousConfigs.current = configs;
+
+      const detected = detectCurrency();
+      const next = configs[detected];
+      setCurrencyCode(detected);
+      setBudget(String(next.defaultBudget));
+      setItemValue(String(next.defaultItemValue));
+      return;
+    }
+
+    const previous = previousConfigs.current;
+    previousConfigs.current = configs;
+    if (!previous) return;
+
+    const next = configs[currencyCode];
+    const last = previous[currencyCode];
+
+    setBudget((current) =>
+      current.trim() === String(last.defaultBudget)
+        ? String(next.defaultBudget)
+        : current,
+    );
+    setItemValue((current) =>
+      current.trim() === String(last.defaultItemValue)
+        ? String(next.defaultItemValue)
+        : current,
+    );
+  }, [configs, currencyCode, ready]);
 
   const budgetNumber = parsePositiveInput(budget);
   const itemValueNumber = parsePositiveInput(itemValue);
@@ -98,7 +147,13 @@ export function RoiCalculator() {
         ? copy.itemPositive
         : undefined;
   const roiMultiplier =
-    budgetNumber !== null ? getReturnMultiplier(budgetNumber, currencyCode) : null;
+    budgetNumber !== null
+      ? getReturnMultiplier(budgetNumber, currencyCode, {
+          min: roi.minMultiplier,
+          max: roi.maxMultiplier,
+          curveBudgetUsd: roi.curveBudgetUsd,
+        })
+      : null;
   const projection =
     budgetNumber !== null && itemValueNumber !== null && roiMultiplier !== null
       ? buildProjection(budgetNumber, itemValueNumber, roiMultiplier)
@@ -106,13 +161,18 @@ export function RoiCalculator() {
 
   const showBudgetError = touched.budget ? budgetError : undefined;
   const showItemValueError = touched.itemValue ? itemValueError : undefined;
+  const minLabel = roi.minMultiplier.toFixed(1);
+  const maxLabel = roi.maxMultiplier.toFixed(1);
+  const rangeLabel = `${minLabel}–${maxLabel}x`;
+  const description = formatMessage(copy.description, { min: minLabel, max: maxLabel });
+  const disclaimer = formatMessage(copy.disclaimer, { min: minLabel, max: maxLabel });
 
   const handleCurrencyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const nextCode = event.target.value as CurrencyCode;
     if (nextCode === currencyCode) return;
 
-    const previous = currencies[currencyCode];
-    const next = currencies[nextCode];
+    const previous = configs[currencyCode];
+    const next = configs[nextCode];
     const isPristine =
       budget.trim() === String(previous.defaultBudget) &&
       itemValue.trim() === String(previous.defaultItemValue);
@@ -151,7 +211,7 @@ export function RoiCalculator() {
               <span className="text-white/48">{copy.titleLine2}</span>
             </h2>
             <p className="mt-5 max-w-lg text-[0.95rem] leading-7 text-mist text-pretty">
-              {copy.description}
+              {description}
             </p>
 
             <div className="mt-8 grid max-w-md grid-cols-2 gap-3">
@@ -159,7 +219,7 @@ export function RoiCalculator() {
                 <div className="flex items-center gap-2">
                   <TrendingUp className="h-3.5 w-3.5 text-emerald-300/80" />
                   <p className="font-display text-[1.6rem] font-medium tracking-[-0.04em] text-white">
-                    <span dir="ltr">{copy.returnRangeValue}</span>
+                    <span dir="ltr">{rangeLabel}</span>
                   </p>
                 </div>
                 <p className="mt-1 text-[0.64rem] uppercase tracking-[0.12em] text-white/48">
@@ -187,7 +247,7 @@ export function RoiCalculator() {
               <ArrowUpRight className="h-4 w-4 text-white/55" />
             </Link>
             <p className="mt-4 max-w-md text-[0.66rem] leading-5 text-white/38">
-              {copy.disclaimer}
+              {disclaimer}
             </p>
           </Reveal>
 

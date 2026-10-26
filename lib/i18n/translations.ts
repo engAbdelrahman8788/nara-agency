@@ -537,6 +537,7 @@ const en = {
     exploreAria: "Explore {title}",
     included: "What's included",
     discuss: "Discuss this service",
+    empty: "New service lines are being prepared. Please check back soon.",
     visual: {
       engagement: "Engagement vs. last period",
       keywords: ["category-defining terms", "high-intent comparison"],
@@ -624,14 +625,14 @@ const en = {
     titleLine1: "Model the revenue.",
     titleLine2: "Then make the call.",
     description:
-      "Choose your market currency, then enter your 90-day media budget and average customer value. Our model applies a market-adjusted 3.2x–4.8x return to estimate the revenue your investment could unlock.",
-    returnRangeValue: "3.2–4.8x",
+      "Choose your market currency, then enter your 90-day media budget and average customer value. Our model applies a market-adjusted {min}–{max}x return to estimate the revenue your investment could unlock.",
+    returnRangeValue: "{min}–{max}x",
     blendedReturn: "Market-adjusted return",
     projectionWindow: "Projection window",
     windowValue: "90d",
     cta: "Pressure-test your projection",
     disclaimer:
-      "Directional estimate based on a 3.2x–4.8x market-adjusted range. Actual results depend on offer, margin, market, and execution.",
+      "Directional estimate based on a {min}–{max}x market-adjusted range. Actual results depend on offer, margin, market, and execution.",
     cardTitle: "NARA return model",
     cardSubtitle: "Instant client-side projection",
     instant: "Instant",
@@ -668,7 +669,7 @@ const en = {
     description:
       "We measure success in revenue, retention, and the quality of the partnership. Our clients hold us to all three.",
     rating: "4.9",
-    reviewCount: "36 partner reviews",
+    reviewCount: "{count} partner reviews",
     retention: "98%",
     retentionLabel: "Client retention",
     footer: "Because a great partner should feel like an unfair advantage.",
@@ -978,6 +979,7 @@ const ar: Dictionary = {
     exploreAria: "استكشف {title}",
     included: "ما تشمله الخدمة",
     discuss: "ناقش هذه الخدمة",
+    empty: "نُجهّز خطوط خدماتنا الجديدة. يرجى العودة قريبًا.",
     visual: {
       engagement: "التفاعل مقارنة بالفترة السابقة",
       keywords: ["مصطلحات تصنع الفئة", "مقارنات عالية النية"],
@@ -1362,14 +1364,14 @@ const ar: Dictionary = {
     titleLine1: "شكّل الإيراد.",
     titleLine2: "ثم اتخذ القرار.",
     description:
-      "اختر عملة سوقك، ثم أدخل ميزانية الإعلام لمدة 90 يومًا ومتوسط قيمة العميل. يطبّق نموذجنا عائدًا معدّلًا حسب السوق بين 3.2x و4.8x لتقدير الإيراد الذي قد يفتحه استثمارك.",
-    returnRangeValue: "3.2–4.8x",
+      "اختر عملة سوقك، ثم أدخل ميزانية الإعلام لمدة 90 يومًا ومتوسط قيمة العميل. يطبّق نموذجنا عائدًا معدّلًا حسب السوق بين {min}x و{max}x لتقدير الإيراد الذي قد يفتحه استثمارك.",
+    returnRangeValue: "{min}–{max}x",
     blendedReturn: "عائد معدّل حسب السوق",
     projectionWindow: "نافذة التوقع",
     windowValue: "90 يومًا",
     cta: "اختبر توقعك",
     disclaimer:
-      "تقدير استرشادي مبني على نطاق عائد معدّل حسب السوق بين 3.2x و4.8x. تعتمد النتائج الفعلية على العرض والهامش والسوق والتنفيذ.",
+      "تقدير استرشادي مبني على نطاق عائد معدّل حسب السوق بين {min}x و{max}x. تعتمد النتائج الفعلية على العرض والهامش والسوق والتنفيذ.",
     cardTitle: "نموذج عائد NARA",
     cardSubtitle: "توقع فوري داخل المتصفح",
     instant: "فوري",
@@ -1406,7 +1408,7 @@ const ar: Dictionary = {
     description:
       "نقيس النجاح بالإيراد والاحتفاظ وجودة الشراكة. عملاؤنا يحاسبوننا على الثلاثة.",
     rating: "4.9",
-    reviewCount: "36 تقييم شريك",
+    reviewCount: "{count} تقييم شريك",
     retention: "98%",
     retentionLabel: "الاحتفاظ بالعملاء",
     footer: "لأن الشريك الرائع يجب أن يبدو كميزة غير عادلة.",

@@ -29,7 +29,7 @@ export function formatNumber(value: number, compact = false) {
 
 export function getInitials(name: string) {
   return name
-    .replace(/[^\w\s&]/g, "")
+    .replace(/[^\w\s&\u0600-\u06FF]/g, "")
     .split(/\s+/)
     .filter(Boolean)
     .slice(0, 2)

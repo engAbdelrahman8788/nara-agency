@@ -1,10 +1,13 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { ArrowDownRight, ArrowUpRight, TrendingUp } from "lucide-react";
 import { buttonStyles } from "@/components/ui/button";
 import { Avatar, StarRating } from "@/components/ui/avatar";
 import { Reveal } from "@/components/ui/reveal";
+import { getAverageRating, getLocalizedTestimonials } from "@/lib/cms/content";
+import { useCms } from "@/lib/cms/provider";
 import { useLanguage } from "@/lib/i18n/language-provider";
 
 function HeroChart({ ariaLabel }: { ariaLabel: string }) {
@@ -213,7 +216,15 @@ function MetricsTicker() {
 }
 
 export function Hero() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { content } = useCms();
+  const heroCopy = content.hero[language];
+  const testimonials = useMemo(
+    () => getLocalizedTestimonials(content, language),
+    [content, language],
+  );
+  const featuredPeople = testimonials.slice(0, 4);
+  const rating = getAverageRating(testimonials);
 
   return (
     <section className="noise-overlay relative overflow-hidden pb-2 pt-14 sm:pt-20 lg:pt-24">
@@ -229,10 +240,10 @@ export function Hero() {
           <div>
             <Reveal delay={1}>
               <h1 className="text-display-xl font-display font-medium text-white text-balance">
-                {t.hero.titleLead}
+                {heroCopy.titleLead}
                 <br />
                 <span className="relative inline-block">
-                  <span className="text-gradient-blue">{t.hero.titleAccent}</span>
+                  <span className="text-gradient-blue">{heroCopy.titleAccent}</span>
                   <svg
                     viewBox="0 0 260 14"
                     fill="none"
@@ -243,13 +254,13 @@ export function Hero() {
                     <path d="M2 11C59 3.5 166 2 258 7.5" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" />
                   </svg>
                 </span>{" "}
-                <span className="whitespace-nowrap text-gradient-blue">{t.hero.titleEnd}</span>
+                <span className="text-gradient-blue">{heroCopy.titleEnd}</span>
               </h1>
             </Reveal>
 
             <Reveal delay={2}>
               <p className="mt-7 max-w-lg text-[0.98rem] leading-[1.8] text-mist sm:text-[1.06rem]">
-                {t.hero.description}
+                {heroCopy.description}
               </p>
             </Reveal>
 
@@ -271,57 +282,38 @@ export function Hero() {
 
             <Reveal delay={4}>
               <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex -space-x-2.5 rtl:space-x-reverse">
-                    {[
-                      {
-                        initials: "SA",
-                        accent: "from-[#5B8CFF] to-[#0030B4]",
-                        name: "Sara Al-Otaibi",
-                        imageSrc: "/testimonials/sara-al-otaibi.jpg",
-                      },
-                      {
-                        initials: "AM",
-                        accent: "from-[#C8A97E] to-[#766045]",
-                        name: "Ahmed Al-Mansouri",
-                        imageSrc: "/testimonials/ahmed-al-mansouri.jpg",
-                      },
-                      {
-                        initials: "MH",
-                        accent: "from-[#00C2FF] to-[#00516D]",
-                        name: "Mohamed Hassan",
-                        imageSrc: "/testimonials/mohamed-hassan.jpg",
-                      },
-                      {
-                        initials: "LB",
-                        accent: "from-[#7C5CFF] to-[#3B1D9C]",
-                        name: "Laila Ben Salih",
-                        imageSrc: "/testimonials/laila-ben-salih.jpg",
-                      },
-                    ].map((person) => (
-                      <Avatar
-                        key={person.name}
-                        initials={person.initials}
-                        name={person.name}
-                        imageSrc={person.imageSrc}
-                        accent={person.accent}
-                        size="sm"
-                        className="avatar-ring"
-                      />
-                    ))}
-                    <span className="avatar-ring inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#171c2a] text-[0.58rem] font-semibold text-white/70">
-                      {t.hero.clientCount}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <StarRating size={11} />
-                      <span className="text-[0.65rem] font-semibold text-white/78">{t.hero.rating}</span>
+                {featuredPeople.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <div className="flex -space-x-2.5 rtl:space-x-reverse">
+                      {featuredPeople.map((person) => (
+                        <Avatar
+                          key={person.id}
+                          initials={person.initials}
+                          name={person.name}
+                          imageSrc={person.image}
+                          accentHex={person.accent}
+                          size="sm"
+                          className="avatar-ring"
+                        />
+                      ))}
+                      <span className="avatar-ring inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#171c2a] text-[0.58rem] font-semibold text-white/70">
+                        {t.hero.clientCount}
+                      </span>
                     </div>
-                    <p className="mt-0.5 text-[0.62rem] text-white/48">{t.hero.partnerReviews}</p>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <StarRating rating={Math.max(1, Math.round(rating))} size={11} />
+                        <span className="text-[0.65rem] font-semibold text-white/78">
+                          {rating.toFixed(1)}
+                        </span>
+                      </div>
+                      <p className="mt-0.5 text-[0.62rem] text-white/48">{t.hero.partnerReviews}</p>
+                    </div>
                   </div>
-                </div>
-                <div className="hidden h-7 w-px bg-white/10 sm:block" />
+                )}
+                {featuredPeople.length > 0 && (
+                  <div className="hidden h-7 w-px bg-white/10 sm:block" />
+                )}
                 <p className="max-w-[11rem] text-[0.65rem] leading-relaxed text-white/48">{t.hero.trusted}</p>
               </div>
             </Reveal>

@@ -1,16 +1,31 @@
 "use client";
 
+import { useMemo } from "react";
 import { Quote, ShieldCheck, TrendingUp } from "lucide-react";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Reveal } from "@/components/ui/reveal";
 import { Avatar, StarRating } from "@/components/ui/avatar";
+import {
+  getAverageRating,
+  getLocalizedTestimonials,
+} from "@/lib/cms/content";
+import { useCms } from "@/lib/cms/provider";
 import { useLanguage } from "@/lib/i18n/language-provider";
+import { formatMessage } from "@/lib/i18n/translations";
 import { cn } from "@/lib/utils";
 
 export function Testimonials() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const { content } = useCms();
   const copy = t.testimonials;
-  const [featured, ...rest] = copy.items;
+  const items = useMemo(
+    () => getLocalizedTestimonials(content, language),
+    [content, language],
+  );
+  const [featured, ...rest] = items;
+  const average = getAverageRating(items);
+
+  if (!featured) return null;
 
   return (
     <section id="testimonials" className="relative overflow-hidden py-24 sm:py-32">
@@ -31,10 +46,14 @@ export function Testimonials() {
               <div className="flex items-center gap-5 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-display text-2xl font-medium tracking-tight text-white">{copy.rating}</span>
-                    <StarRating />
+                    <span className="font-display text-2xl font-medium tracking-tight text-white">
+                      {average.toFixed(1)}
+                    </span>
+                    <StarRating rating={Math.max(1, Math.round(average))} />
                   </div>
-                  <p className="mt-1 text-[0.6rem] uppercase tracking-[0.1em] text-white/48">{copy.reviewCount}</p>
+                  <p className="mt-1 text-[0.6rem] uppercase tracking-[0.1em] text-white/48">
+                    {formatMessage(copy.reviewCount, { count: items.length })}
+                  </p>
                 </div>
                 <span className="h-9 w-px bg-white/10" />
                 <div>
@@ -49,8 +68,8 @@ export function Testimonials() {
           />
         </Reveal>
 
-        <div className="mt-12 grid gap-4 lg:grid-cols-12">
-          <Reveal className="lg:col-span-5">
+        <div className={cn("mt-12 grid gap-4", rest.length > 0 && "lg:grid-cols-12")}>
+          <Reveal className={rest.length > 0 ? "lg:col-span-5" : undefined}>
             <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-electric/20 bg-[#0B1020] p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] transition-all duration-500 hover:border-electric/35 hover:shadow-glow-sm sm:p-8">
               <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-electric/[0.18] blur-[80px] rtl:right-auto rtl:-left-20" />
               <div className="pointer-events-none absolute inset-0 bg-grid-fine opacity-[0.08] [mask-image:linear-gradient(to_bottom,black,transparent)]" />
@@ -74,7 +93,7 @@ export function Testimonials() {
                       initials={featured.initials}
                       name={featured.name}
                       imageSrc={featured.image}
-                      accent={featured.accent}
+                      accentHex={featured.accent}
                       size="lg"
                     />
                     <div>
@@ -82,51 +101,53 @@ export function Testimonials() {
                       <p className="mt-0.5 text-[0.64rem] text-white/48">{featured.role}, {featured.company}</p>
                     </div>
                   </div>
-                  <StarRating size={12} />
+                  <StarRating rating={featured.rating} size={12} />
                 </div>
               </div>
             </article>
           </Reveal>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
-            {rest.map((testimonial, index) => (
-              <Reveal key={testimonial.id} delay={((index % 2) + 1) as 1 | 2}>
-                <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-surface p-5 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.15] hover:bg-[#111522] sm:p-6">
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.025] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                  <div className="relative flex items-center justify-between">
-                    <StarRating size={12} />
-                    <span className="font-display text-[0.58rem] font-semibold tracking-[0.2em] text-white/42">
-                      {testimonial.company}
-                    </span>
-                  </div>
-                  <blockquote className="relative mt-4 flex-1">
-                    <p className="text-[0.78rem] leading-[1.75] text-white/62">&ldquo;{testimonial.quote}&rdquo;</p>
-                  </blockquote>
-                  <div className="relative mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar
-                        initials={testimonial.initials}
-                        name={testimonial.name}
-                        imageSrc={testimonial.image}
-                        accent={testimonial.accent}
-                        size="sm"
-                      />
-                      <div>
-                        <p className="text-[0.7rem] font-semibold text-white/82">{testimonial.name}</p>
-                        <p className="text-[0.57rem] text-white/48">{testimonial.role}</p>
-                      </div>
+          {rest.length > 0 && (
+            <div className="grid gap-4 sm:grid-cols-2 lg:col-span-7">
+              {rest.map((testimonial, index) => (
+                <Reveal key={testimonial.id} delay={((index % 2) + 1) as 1 | 2}>
+                  <article className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-surface p-5 transition-all duration-500 hover:-translate-y-1 hover:border-white/[0.15] hover:bg-[#111522] sm:p-6">
+                    <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.025] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                    <div className="relative flex items-center justify-between">
+                      <StarRating rating={testimonial.rating} size={12} />
+                      <span className="font-display text-[0.58rem] font-semibold tracking-[0.2em] text-white/42">
+                        {testimonial.company}
+                      </span>
                     </div>
-                    {testimonial.metric && (
-                      <div className="text-end">
-                        <p className="font-display text-base font-medium text-white/85">{testimonial.metric.value}</p>
-                        <p className="text-[0.5rem] uppercase tracking-[0.1em] text-white/42">{testimonial.metric.label}</p>
+                    <blockquote className="relative mt-4 flex-1">
+                      <p className="text-[0.78rem] leading-[1.75] text-white/62">&ldquo;{testimonial.quote}&rdquo;</p>
+                    </blockquote>
+                    <div className="relative mt-5 flex items-center justify-between border-t border-white/[0.06] pt-4">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar
+                          initials={testimonial.initials}
+                          name={testimonial.name}
+                          imageSrc={testimonial.image}
+                          accentHex={testimonial.accent}
+                          size="sm"
+                        />
+                        <div>
+                          <p className="text-[0.7rem] font-semibold text-white/82">{testimonial.name}</p>
+                          <p className="text-[0.57rem] text-white/48">{testimonial.role}</p>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </article>
-              </Reveal>
-            ))}
-          </div>
+                      {testimonial.metric && (
+                        <div className="text-end">
+                          <p className="font-display text-base font-medium text-white/85">{testimonial.metric.value}</p>
+                          <p className="text-[0.5rem] uppercase tracking-[0.1em] text-white/42">{testimonial.metric.label}</p>
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          )}
         </div>
 
         <Reveal delay={2}>
