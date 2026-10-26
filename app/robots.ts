@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/dashboard", "/login", "/api/"],
       },
     ],
-    sitemap: "https://nara.agency/sitemap.xml",
-    host: "https://nara.agency",
+    sitemap: "https://nara-agency.vercel.app/sitemap.xml",
+    host: "nara-agency.vercel.app",
   };
 }
