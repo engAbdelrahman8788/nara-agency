@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, LogIn, Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/logo";
 import { buttonStyles } from "@/components/ui/button";
 import { LanguageSwitcher } from "@/components/ui/language-switcher";
@@ -103,7 +103,7 @@ export function SiteHeader() {
             <Link
               key={link.href}
               href={resolveHref(link.href)}
-              className="group relative rounded-lg px-4 py-2 text-[0.82rem] font-medium text-white/62 transition-colors duration-300 hover:text-white"
+              className="group relative rounded-lg px-3 py-2 text-[0.82rem] font-medium text-white/62 transition-colors duration-300 hover:text-white xl:px-4"
             >
               {link.label}
               <span className="absolute inset-x-4 -bottom-0.5 h-px origin-left scale-x-0 bg-gradient-to-r from-electric-soft to-transparent transition-transform duration-300 group-hover:scale-x-100 rtl:origin-right rtl:bg-gradient-to-l" />
@@ -113,7 +113,18 @@ export function SiteHeader() {
 
         <div className="hidden items-center gap-2.5 lg:flex">
           <LanguageSwitcher />
-          <Link href={resolveHref("#contact")} className={buttonStyles({ size: "md", className: "px-4" })}>
+          <Link
+            href="/login"
+            aria-label={t.nav.loginAria}
+            className={buttonStyles({ variant: "outline", size: "md", className: "px-3.5" })}
+          >
+            <LogIn className="h-4 w-4 rtl:-scale-x-100" />
+            <span className="hidden xl:inline">{t.nav.login}</span>
+          </Link>
+          <Link
+            href={resolveHref("#contact")}
+            className={buttonStyles({ size: "md", className: "px-4 max-xl:px-3.5" })}
+          >
             {t.nav.bookCall}
             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover/button:-translate-y-0.5 group-hover/button:translate-x-0.5 rtl:group-hover/button:-translate-x-0.5" />
           </Link>
@@ -155,7 +166,15 @@ export function SiteHeader() {
                 </Link>
               ))}
             </nav>
-            <div className="mt-5 grid grid-cols-1 gap-2.5">
+            <div className="mt-5 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className={buttonStyles({ variant: "outline", size: "lg", className: "w-full" })}
+              >
+                <LogIn className="h-4 w-4 rtl:-scale-x-100" />
+                {t.nav.login}
+              </Link>
               <Link
                 href={resolveHref("#contact")}
                 onClick={() => setMobileOpen(false)}
