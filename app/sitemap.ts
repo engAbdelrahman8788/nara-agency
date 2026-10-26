@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 import { insights } from "@/lib/data";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://nara.agency";
-  const lastModified = new Date("2026-10-23");
+  const baseUrl = "https://nara-agency.vercel.app";
+  const lastModified = new Date("2026-10-26");
 
   return [
     {
@@ -24,6 +24,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: 0.7,
     })),
+    {
+      url: `${baseUrl}/login`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${baseUrl}/dashboard`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.3,
+    },
     {
       url: `${baseUrl}/privacy`,
       lastModified,
