@@ -127,8 +127,8 @@ The public ROI calculator adapts to the visitor's market and keeps projections g
 - **Local benchmarks:** each currency has its own default monthly media budget and average ticket size, rather than using a raw currency conversion of a US default. These presets are editable in the Content studio.
 - **Manual selection:** changing the currency stores the preference for future visits. Edited values are converted once using approximate FX rates and rounded to a market-friendly step; pristine values switch to the selected market's local benchmark.
 - **Realistic returns:** the modeled return multiple starts at a configurable base (**3.2x** by default) and approaches a configurable maximum (**4.8x** by default). It rises with the USD-equivalent monthly budget using `min + (max − min) × (1 − e^(−budgetUSD / curve))`, rounded to one decimal. All three values are editable in the Content studio.
-- **Inputs:** current monthly revenue, monthly ad budget, and average ticket size. Each has a synchronized number field and slider, so the projection updates as either control moves.
-- **Projection:** generated revenue = monthly budget × modeled multiple; total revenue after NARA = current monthly revenue + generated revenue; projected leads = generated revenue ÷ average ticket size; revenue lift = generated revenue ÷ current monthly revenue.
+- **Inputs:** monthly ad budget and average ticket size. Each has a synchronized number field and slider, so the projection updates as either control moves.
+- **Projection:** projected monthly revenue = monthly budget × modeled multiple; projected leads = projected monthly revenue ÷ average ticket size.
 - **Formatting:** results use locale-aware formatting and Latin digits in Arabic (`ar-EG-u-nu-latn`). Inputs are validated inline and the projection is recalculated entirely in the browser.
 - **Fixed inputs:** FX conversion rates and market-friendly input steps remain code-level constants; the studio edits the model and presets, not live exchange rates.
 
@@ -141,7 +141,7 @@ The public ROI calculator adapts to the visitor's market and keeps projections g
 - Editable service cards with detail modals, ordering, visibility, and an empty state
 - Methodology timeline with a senior-pod visual
 - CMS-driven, filterable case studies with bespoke CSS/SVG cover art, dynamic categories, and full-story modals
-- Currency-aware monthly ROI calculator with three synchronized inputs, market detection, and realistic 3.2x–4.8x projections
+- Currency-aware monthly ROI calculator with two synchronized inputs, market detection, and realistic 3.2x–4.8x projections
 - Arab client testimonials with representative portraits, bilingual profile context, and natural Arabic review copy
 - Editorial insights and newsletter capture
 - Validated lead-capture form that writes directly into the agency CRM, with success state, calendar booking, and WhatsApp links
@@ -229,7 +229,7 @@ public/testimonials/       Representative Arab portrait photography
 
 - **Modals** use a portal, focus trap, Escape handling, scroll lock, and stable focus restoration. The focus effect intentionally depends only on `open` so typing in a form never pulls focus out of the active field.
 - **Charts** are hand-built SVG/CSS, keeping the experience fast and dependency-light.
-- **ROI calculator:** projections are calculated entirely in the browser from the selected currency, monthly budget, current monthly revenue, and average ticket size. The model is intentionally bounded at 3.2x–4.8x instead of inflating small budgets into multi-million headline numbers.
+- **ROI calculator:** projections are calculated entirely in the browser from the selected currency, monthly ad budget, and average ticket size. The model is intentionally bounded at 3.2x–4.8x instead of inflating small budgets into multi-million headline numbers.
 - **Downloads** are generated client-side: CSV exports use a UTF-8 BOM for Excel compatibility, and reports use a minimal, valid single-page PDF.
 - **State sharing:** the client and admin views are rendered by the same `DashboardShell`, so a ticket created as a client is immediately visible in the agency ticket desk during that browser session. Leads use the same browser-local pattern, so landing-page submissions appear in the CRM on that profile. There is no backend database.
 - **CMS content:** `CmsProvider` wraps the entire app in `app/layout.tsx`. Every read parses and sanitizes the stored payload, malformed data falls back to seed content instead of crashing, and editors key drafts to their own section so unrelated saves do not discard unsaved work. Content export/import is the supported handoff between browsers because the store is local to one origin and profile.

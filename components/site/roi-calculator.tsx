@@ -32,15 +32,12 @@ import {
 import { cn } from "@/lib/utils";
 
 type Projection = {
-  generatedRevenue: number;
-  totalRevenue: number;
+  projectedRevenue: number;
   roiMultiplier: number;
   projectedLeads: number;
-  liftPercent: number;
 };
 
 type TouchedFields = {
-  revenue: boolean;
   budget: boolean;
   ticket: boolean;
 };
@@ -51,32 +48,18 @@ function parsePositiveInput(value: string): number | null {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
 }
 
-function defaultRevenueFor(config: CurrencyConfig): number {
-  return config.defaultBudget * 4;
-}
-
-function defaultRevenueStep(config: CurrencyConfig): number {
-  return config.budgetStep * 5;
-}
-
 function buildProjection(
-  revenue: number,
   budget: number,
   ticket: number,
   roiMultiplier: number,
 ): Projection | null {
-  const rawGenerated = budget * roiMultiplier;
-  if (!Number.isFinite(rawGenerated) || rawGenerated <= 0) return null;
-
-  const round = (value: number) =>
-    Math.round((value + Number.EPSILON) * 100) / 100;
+  const rawRevenue = budget * roiMultiplier;
+  if (!Number.isFinite(rawRevenue) || rawRevenue <= 0) return null;
 
   return {
-    generatedRevenue: round(rawGenerated),
-    totalRevenue: round(revenue + rawGenerated),
+    projectedRevenue: Math.round((rawRevenue + Number.EPSILON) * 100) / 100,
     roiMultiplier,
-    projectedLeads: Math.max(0, Math.round(rawGenerated / ticket)),
-    liftPercent: (rawGenerated / revenue) * 100,
+    projectedLeads: Math.max(0, Math.round(rawRevenue / ticket)),
   };
 }
 
@@ -189,13 +172,9 @@ export function RoiCalculator() {
   const copy = t.roi;
   const roi = content.roi;
   const [currencyCode, setCurrencyCode] = useState<CurrencyCode>("USD");
-  const [revenue, setRevenue] = useState(
-    String(defaultRevenueFor(currencies.USD)),
-  );
   const [budget, setBudget] = useState(String(currencies.USD.defaultBudget));
   const [ticket, setTicket] = useState(String(currencies.USD.defaultItemValue));
   const [touched, setTouched] = useState<TouchedFields>({
-    revenue: false,
     budget: false,
     ticket: false,
   });
@@ -233,7 +212,6 @@ export function RoiCalculator() {
       const detected = detectCurrency();
       const next = configs[detected];
       setCurrencyCode(detected);
-      setRevenue(String(defaultRevenueFor(next)));
       setBudget(String(next.defaultBudget));
       setTicket(String(next.defaultItemValue));
       return;
@@ -246,11 +224,6 @@ export function RoiCalculator() {
     const next = configs[currencyCode];
     const last = previous[currencyCode];
 
-    setRevenue((current) =>
-      current.trim() === String(defaultRevenueFor(last))
-        ? String(defaultRevenueFor(next))
-        : current,
-    );
     setBudget((current) =>
       current.trim() === String(last.defaultBudget)
         ? String(next.defaultBudget)
@@ -263,16 +236,9 @@ export function RoiCalculator() {
     );
   }, [configs, currencyCode, ready]);
 
-  const revenueNumber = parsePositiveInput(revenue);
   const budgetNumber = parsePositiveInput(budget);
   const ticketNumber = parsePositiveInput(ticket);
 
-  const revenueError =
-    revenue.trim() === ""
-      ? copy.revenueRequired
-      : revenueNumber === null
-        ? copy.revenuePositive
-        : undefined;
   const budgetError =
     budget.trim() === ""
       ? copy.budgetRequired
@@ -295,14 +261,10 @@ export function RoiCalculator() {
         })
       : null;
   const projection =
-    revenueNumber !== null &&
-    budgetNumber !== null &&
-    ticketNumber !== null &&
-    roiMultiplier !== null
-      ? buildProjection(revenueNumber, budgetNumber, ticketNumber, roiMultiplier)
+    budgetNumber !== null && ticketNumber !== null && roiMultiplier !== null
+      ? buildProjection(budgetNumber, ticketNumber, roiMultiplier)
       : null;
 
-  const showRevenueError = touched.revenue ? revenueError : undefined;
   const showBudgetError = touched.budget ? budgetError : undefined;
   const showTicketError = touched.ticket ? ticketError : undefined;
   const minLabel = roi.minMultiplier.toFixed(1);
@@ -317,12 +279,6 @@ export function RoiCalculator() {
     max: maxLabel,
   });
 
-  const revenueStep = defaultRevenueStep(config);
-  const revenueMax = Math.ceil(
-    (Math.max(revenueStep * 20, (revenueNumber ?? defaultRevenueFor(config)) * 3) +
-      Number.EPSILON) /
-      revenueStep,
-  ) * revenueStep;
   const budgetMax = Math.ceil(
     (Math.max(
       config.budgetStep * 10,
@@ -340,14 +296,6 @@ export function RoiCalculator() {
       config.itemStep,
   ) * config.itemStep;
 
-  const liftLabel =
-    projection !== null
-      ? `+${new Intl.NumberFormat(
-          language === "ar" ? "ar-EG-u-nu-latn" : "en-US",
-          { maximumFractionDigits: 1 },
-        ).format(projection.liftPercent)}%`
-      : "";
-
   const handleCurrencyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const nextCode = event.target.value as CurrencyCode;
     if (nextCode === currencyCode) return;
@@ -355,7 +303,6 @@ export function RoiCalculator() {
     const previous = configs[currencyCode];
     const next = configs[nextCode];
     const isPristine =
-      revenue.trim() === String(defaultRevenueFor(previous)) &&
       budget.trim() === String(previous.defaultBudget) &&
       ticket.trim() === String(previous.defaultItemValue);
 
@@ -367,22 +314,13 @@ export function RoiCalculator() {
           : fallback;
 
     setCurrencyCode(nextCode);
-    setRevenue(
-      String(
-        convert(
-          revenueNumber,
-          defaultRevenueStep(next),
-          defaultRevenueFor(next),
-        ),
-      ),
-    );
     setBudget(
       String(convert(budgetNumber, next.budgetStep, next.defaultBudget)),
     );
     setTicket(
       String(convert(ticketNumber, next.itemStep, next.defaultItemValue)),
     );
-    setTouched({ revenue: false, budget: false, ticket: false });
+    setTouched({ budget: false, ticket: false });
     storeCurrency(nextCode);
   };
 
@@ -502,31 +440,12 @@ export function RoiCalculator() {
               <form
                 onSubmit={(event) => {
                   event.preventDefault();
-                  setTouched({ revenue: true, budget: true, ticket: true });
+                  setTouched({ budget: true, ticket: true });
                 }}
                 noValidate
                 className="relative px-5 pb-4 pt-5 sm:px-6 sm:pt-6"
               >
-                <div className="grid gap-5 sm:grid-cols-3 sm:gap-4">
-                  <SliderField
-                    id={`${uid}-revenue`}
-                    label={copy.revenueLabel}
-                    hint={copy.revenueHint}
-                    currency={currencyCode}
-                    language={language}
-                    value={revenue}
-                    placeholder={String(defaultRevenueFor(config))}
-                    error={showRevenueError}
-                    min={revenueStep}
-                    max={revenueMax}
-                    step={revenueStep}
-                    onChange={(value) =>
-                      setRevenue(value.trim() === "" ? "" : value)
-                    }
-                    onBlur={() =>
-                      setTouched((current) => ({ ...current, revenue: true }))
-                    }
-                  />
+                <div className="grid gap-5 sm:grid-cols-2 sm:gap-4">
                   <SliderField
                     id={`${uid}-budget`}
                     label={copy.budgetLabel}
@@ -592,12 +511,12 @@ export function RoiCalculator() {
 
                     {projection ? (
                       <div
-                        key={`${currencyCode}-${projection.generatedRevenue}-${projection.projectedLeads}-${projection.totalRevenue}`}
+                        key={`${currencyCode}-${projection.projectedRevenue}-${projection.projectedLeads}`}
                         className="animate-fade-up"
                       >
                         <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
                           <p className="max-w-full break-words font-display text-[2rem] font-medium leading-none tracking-[-0.045em] tabular-nums text-white sm:text-[2.45rem]">
-                            {formatCurrency(projection.generatedRevenue, currencyCode, language)}
+                            {formatCurrency(projection.projectedRevenue, currencyCode, language)}
                           </p>
                           <span className="text-[0.78rem] font-medium text-white/42">
                             {copy.perMonth}
@@ -611,15 +530,7 @@ export function RoiCalculator() {
                           {copy.generatedLabel}
                         </p>
 
-                        <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-white/[0.07] pt-4">
-                          <div className="min-w-0">
-                            <dt className="text-[0.56rem] uppercase leading-4 tracking-[0.1em] text-white/42">
-                              {copy.netRevenue}
-                            </dt>
-                            <dd className="mt-1 truncate text-[0.88rem] font-semibold tabular-nums text-white/82">
-                              {formatCurrency(projection.totalRevenue, currencyCode, language)}
-                            </dd>
-                          </div>
+                        <dl className="mt-5 grid grid-cols-2 gap-3 border-t border-white/[0.07] pt-4">
                           <div className="min-w-0">
                             <dt className="text-[0.56rem] uppercase leading-4 tracking-[0.1em] text-white/42">
                               {copy.projectedLeads}
@@ -631,10 +542,11 @@ export function RoiCalculator() {
                           </div>
                           <div className="min-w-0">
                             <dt className="text-[0.56rem] uppercase leading-4 tracking-[0.1em] text-white/42">
-                              {copy.liftLabel}
+                              {copy.returnMultiple}
                             </dt>
-                            <dd className="mt-1 truncate text-[0.88rem] font-semibold tabular-nums text-emerald-300">
-                              {liftLabel}
+                            <dd className="mt-1 flex items-center gap-1.5 text-[0.88rem] font-semibold tabular-nums text-white/82">
+                              <TrendingUp className="h-3 w-3 shrink-0 text-white/38" />
+                              {projection.roiMultiplier.toFixed(1)}x
                             </dd>
                           </div>
                         </dl>
