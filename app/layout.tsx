@@ -7,29 +7,33 @@ import { LanguageProvider } from "@/lib/i18n/language-provider";
 import { CmsProvider } from "@/lib/cms/provider";
 import { LeadsProvider } from "@/lib/leads/provider";
 import { SkipLink } from "@/components/ui/skip-link";
+import { organizationId, siteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://nara.agency"),
+  metadataBase: new URL(siteUrl),
   title: {
     default: "NARA — We Scale Brands Beyond Boundaries",
     template: "%s — NARA",
   },
   description:
-    "NARA is a premier growth marketing agency engineering measurable outcomes through media buying, creative, SEO, and conversion design.",
+    "NARA is a B2B growth marketing agency engineering measurable outcomes through lead generation, performance media, creative, SEO, and conversion design across Saudi Arabia, the UAE, Egypt, and the wider Gulf region.",
   keywords: [
-    "growth marketing agency",
+    "B2B lead generation agency",
     "performance marketing",
+    "growth marketing agency",
     "media buying",
     "SEO agency",
-    "social media management",
     "conversion optimization",
+    "Saudi Arabia marketing agency",
+    "UAE performance marketing",
+    "Egypt digital marketing",
   ],
   authors: [{ name: "NARA" }],
   openGraph: {
     title: "NARA — We Scale Brands Beyond Boundaries",
     description:
-      "A senior-only growth partner for ambitious brands. Paid media, SEO, creative, and CRO under one roof.",
-    url: "https://nara.agency",
+      "A senior-only B2B growth partner for ambitious brands across Saudi Arabia, the UAE, Egypt, and the Gulf. Paid media, lead generation, SEO, creative, and CRO under one roof.",
+    url: siteUrl,
     siteName: "NARA",
     locale: "en_US",
     type: "website",
@@ -37,7 +41,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "NARA — We Scale Brands Beyond Boundaries",
-    description: "A senior-only growth partner for ambitious brands.",
+    description:
+      "B2B lead generation, performance marketing, and ROI strategy for Saudi Arabia, the UAE, Egypt, and the Gulf.",
   },
   robots: {
     index: true,
@@ -60,32 +65,41 @@ const languageBootstrap = `(function(){try{var l=window.localStorage.getItem("na
 const organizationJsonLd = JSON.stringify({
   "@context": "https://schema.org",
   "@type": "ProfessionalService",
-  "@id": "https://nara-agency.vercel.app/#organization",
+  "@id": organizationId,
   name: "NARA Marketing Agency",
   alternateName: "NARA",
-  url: "https://nara-agency.vercel.app",
-  logo: "https://nara-agency.vercel.app/brand/nara-monogram.png",
+  url: siteUrl,
+  logo: `${siteUrl}/brand/nara-monogram.png`,
   description:
-    "NARA Marketing Agency is a growth marketing agency delivering digital marketing, B2B lead generation, automotive marketing, and web development for brands in Egypt and worldwide.",
+    "NARA Marketing Agency is a B2B growth marketing agency delivering lead generation, performance marketing, ROI optimization, digital strategy, automotive marketing, and web development for brands in Saudi Arabia, the UAE, Egypt, and the wider Gulf region.",
   email: "hello@nara.agency",
   foundingDate: "2019",
   slogan: "We scale brands beyond boundaries.",
   areaServed: [
+    { "@type": "Country", name: "Saudi Arabia" },
+    { "@type": "Country", name: "United Arab Emirates" },
     { "@type": "Country", name: "Egypt" },
     { "@type": "City", name: "Alexandria" },
+    { "@type": "Place", name: "Gulf Cooperation Council" },
   ],
   knowsAbout: [
-    "Digital Marketing",
     "B2B Lead Generation",
+    "Performance Marketing",
+    "ROI Optimization",
+    "Digital Strategy",
+    "Marketing Analytics",
+    "CRM Integration",
     "Automotive Marketing",
     "Web Development",
   ],
   hasOfferCatalog: {
     "@type": "OfferCatalog",
-    name: "Marketing and digital services",
+    name: "B2B growth and digital services",
     itemListElement: [
-      "Digital Marketing",
       "B2B Lead Generation",
+      "Performance Marketing",
+      "ROI & Growth Strategy",
+      "Digital Strategy",
       "Automotive Marketing",
       "Web Development",
     ].map((service, index) => ({
@@ -94,7 +108,7 @@ const organizationJsonLd = JSON.stringify({
       itemOffered: {
         "@type": "Service",
         name: service,
-        provider: { "@id": "https://nara-agency.vercel.app/#organization" },
+        provider: { "@id": organizationId },
       },
     })),
   },

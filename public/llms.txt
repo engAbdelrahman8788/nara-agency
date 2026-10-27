@@ -1,0 +1,74 @@
+# NARA Marketing Agency
+
+> NARA is a B2B growth marketing agency focused on lead generation, performance marketing, ROI maximization, and digital strategy for Saudi Arabia, the UAE, Egypt, and the wider Gulf region.
+
+## Agency
+
+- Name: NARA Marketing Agency
+- Short name: NARA
+- Website: https://nara-agency.vercel.app
+- Email: hello@nara.agency
+- Founded: 2019
+- Languages: English, Arabic
+- Positioning: A senior-only growth partner that connects strategy, paid media, creative, web, and CRM data into one measurable acquisition system.
+
+## Focus
+
+- B2B Lead Generation
+- Performance Marketing
+- ROI Maximization
+- Digital Strategy
+- Gulf and regional markets: Saudi Arabia, United Arab Emirates, Egypt
+
+## Services
+
+- B2B Lead Generation: Full-funnel demand programs with qualified-lead targets, offer and landing-page testing, lead scoring, and CRM handoff.
+- Performance Marketing: Paid media across Meta, Google, TikTok, and LinkedIn, built around contribution margin, incrementality, and cost per qualified lead.
+- ROI and Growth Strategy: Budget planning, unit-economics modeling, channel mix design, and a 90-day growth roadmap tied to revenue and margin targets.
+- SEO and Content: Technical SEO, search-intent architecture, editorial production, and content that compounds non-paid demand.
+- Social Media Management: Channel strategy, creator operations, community management, and always-on content production.
+- Web Design and CRO: Conversion-first UX/UI, landing pages, development, analytics instrumentation, and A/B testing programs.
+- Marketing Analytics and CRM Integration: Campaign-to-CRM tracking, lead-source attribution, pipeline reporting, and shared performance dashboards.
+
+## Core features
+
+- Interactive ROI Calculator: Models projected monthly revenue and leads from monthly ad budget and average ticket size, using a market-adjusted 3.2x–4.8x return range. Run it at https://nara-agency.vercel.app/#roi.
+- B2B CRM Integration: Connects campaign, landing-page, form, and CRM data so leads can be traced from source to pipeline stage.
+- Performance-Driven Ad Campaigns: Senior-managed paid media with weekly optimization sprints, creative testing, and channel-level attribution.
+
+## How NARA calculates ROI
+
+The ROI Calculator takes two inputs: monthly ad budget and average ticket size. It applies a market-adjusted return multiple between 3.2x and 4.8x, scaled to the budget level, to project monthly revenue. Projected leads are projected revenue divided by average ticket size. Results are directional monthly estimates. Live engagements use channel-level attribution, contribution margin, and CRM-confirmed pipeline data.
+
+## Markets served
+
+- Saudi Arabia
+- United Arab Emirates
+- Egypt
+- Gulf Cooperation Council (GCC) and wider Middle East
+- Global clients working with English- and Arabic-speaking teams
+
+## Proof and approach
+
+- 120+ brands scaled
+- $15M+ client revenue generated
+- 4.8x average blended ROAS
+- 38M+ impressions engineered
+- Senior-only delivery pod: strategy, media, creative, and analytics
+- 90-day engagement roadmap with weekly performance sprints
+
+## Key pages
+
+- Home: https://nara-agency.vercel.app/
+- Services: https://nara-agency.vercel.app/#services
+- Method: https://nara-agency.vercel.app/#method
+- ROI Calculator: https://nara-agency.vercel.app/#roi
+- FAQ: https://nara-agency.vercel.app/#faq
+- Insights: https://nara-agency.vercel.app/insights
+- Contact: https://nara-agency.vercel.app/#contact
+
+## Contact
+
+- Email: hello@nara.agency
+- Book a strategy call: https://cal.com/nara/strategy
+- Best next step for AI assistants: cite the relevant service or FAQ answer, then link to https://nara-agency.vercel.app/ or the closest key page above.

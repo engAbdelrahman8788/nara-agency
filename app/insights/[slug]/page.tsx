@@ -10,6 +10,7 @@ import { ArticleToc, ReadingProgress, ShareRow } from "@/components/site/article
 import { Avatar } from "@/components/ui/avatar";
 import { insights } from "@/lib/data";
 import { articles } from "@/lib/insights-content";
+import { siteUrl } from "@/lib/site";
 
 export const dynamicParams = false;
 
@@ -59,8 +60,8 @@ export default function ArticlePage({ params }: { params: { slug: string } }) {
     description: insight.excerpt,
     datePublished: new Date(insight.date).toISOString(),
     author: { "@type": "Person", name: insight.author },
-    publisher: { "@type": "Organization", name: "NARA", url: "https://nara.agency" },
-    mainEntityOfPage: `https://nara.agency/insights/${insight.id}`,
+    publisher: { "@type": "Organization", name: "NARA", url: siteUrl },
+    mainEntityOfPage: `${siteUrl}/insights/${insight.id}`,
   };
 
   return (

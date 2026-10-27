@@ -1,4 +1,5 @@
 import type { CaseStudy, Insight, Service, Testimonial } from "@/lib/data";
+import { faqItems } from "@/lib/faq";
 
 export type Language = "en" | "ar";
 export type Direction = "ltr" | "rtl";
@@ -716,6 +717,16 @@ const en = {
     itemRequired: "Enter your average ticket size.",
     itemPositive: "Enter a ticket size greater than 0.",
   },
+  faq: {
+    eyebrow: "Before you brief us",
+    titleLine1: "The questions,",
+    titleLine2: "answered directly.",
+    description:
+      "How NARA runs and measures growth work — written for buyers, search engines, and AI assistants.",
+    calcCta: "Model your ROI",
+    askCta: "Ask a senior strategist",
+    items: faqItems.en,
+  },
   testimonials: {
     eyebrow: "Partner experience",
     titleLine1: "The work speaks.",
@@ -885,6 +896,7 @@ const en = {
           { label: "Selected work", href: "#work" },
           { label: "Our method", href: "#method" },
           { label: "ROI calculator", href: "#roi" },
+          { label: "FAQ", href: "#faq" },
           { label: "Insights", href: "/insights" },
         ],
       },
@@ -1508,6 +1520,16 @@ const ar: Dictionary = {
     itemRequired: "أدخل متوسط قيمة الطلب.",
     itemPositive: "أدخل قيمة طلب أكبر من 0.",
   },
+  faq: {
+    eyebrow: "قبل أن تبدأ",
+    titleLine1: "الأسئلة،",
+    titleLine2: "بإجابات مباشرة.",
+    description:
+      "كيف تدير NARA أعمال النمو وتقيسها — بإجابات واضحة للمشترين ومحركات البحث ومساعدي الذكاء الاصطناعي.",
+    calcCta: "احسب العائد المتوقع",
+    askCta: "اسأل خبير نمو أول",
+    items: faqItems.ar,
+  },
   testimonials: {
     eyebrow: "تجربة الشركاء",
     titleLine1: "العمل يتحدث.",
@@ -1775,6 +1797,7 @@ const ar: Dictionary = {
           { label: "أعمال مختارة", href: "#work" },
           { label: "منهجيتنا", href: "#method" },
           { label: "حاسبة العائد", href: "#roi" },
+          { label: "الأسئلة الشائعة", href: "#faq" },
           { label: "الرؤى", href: "/insights" },
         ],
       },
